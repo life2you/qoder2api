@@ -647,10 +647,21 @@
           <span class="muted">为每位组员分配专属 Key，调用日志精准审计到人，可随时单独禁用或撤销</span>
         </div>
 
-        <div class="row" style="margin-bottom:16px;">
-          <input id="newKeyName" placeholder="组员姓名 / 标识（例如：张三、后端组-李四）" style="width:260px;" />
-          <input id="newKeyValue" placeholder="自定义 Key（选填，留空自动生成 sk-...）" style="width:260px;" />
-          <button id="addKeyBtn" class="success-action">➕ 生成/添加成员 Key</button>
+        <div style="background: #f8fafc; border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+          <div style="font-size: 13.5px; font-weight: 600; margin-bottom: 10px; color: #334155;">➕ 为新组员分发专属 Key</div>
+          <div class="row" style="gap: 12px; align-items: flex-end;">
+            <div style="flex: 1; min-width: 200px;">
+              <label style="font-size: 12.5px; margin-bottom: 4px;">组员姓名 / 标识 <span style="color:#ef4444;">*</span></label>
+              <input id="newKeyName" placeholder="例如：张三、后端组-李四" />
+            </div>
+            <div style="flex: 1; min-width: 240px;">
+              <label style="font-size: 12.5px; margin-bottom: 4px;">自定义 Key（选填，留空自动生成 sk-...）</label>
+              <input id="newKeyValue" placeholder="留空将自动生成安全 sk-..." />
+            </div>
+            <button id="addKeyBtn" class="success-action" style="padding: 9.5px 20px; height: 40px;">
+              ⚡ 生成并添加 Key
+            </button>
+          </div>
         </div>
 
         <div style="overflow-x: auto;">
@@ -1499,14 +1510,20 @@
     };
 
     // 添加新成员 Key
-    $('addKeyBtn').onclick = async () => {
-      const name = ($('newKeyName').value || '').trim();
+    async function submitAddKey() {
+      let name = ($('newKeyName').value || '').trim();
       const customKey = ($('newKeyValue').value || '').trim();
+
+      // 如果未输入姓名，弹出友好交互对话框直接输入
       if (!name) {
-        showToast('请输入组员姓名或标识', 'warning');
-        $('newKeyName').focus();
-        return;
+        name = prompt('请输入新组员姓名或标识（例如：张三、后端-李四）：');
+        if (!name || !name.trim()) {
+          $('newKeyName').focus();
+          return;
+        }
+        name = name.trim();
       }
+
       try {
         const res = await api('/api/keys/add', {
           method: 'POST',
@@ -1516,7 +1533,7 @@
         $('newKeyValue').value = '';
         try {
           await navigator.clipboard.writeText(res.key);
-          showToast(`已为「${name}」生成专属 Key 并自动复制到剪贴板！`, 'success', 4000);
+          showToast(`已为「${name}」生成专属 Key 并自动复制到剪贴板！`, 'success', 5000);
         } catch {
           showToast(`已为「${name}」生成专属 Key！`, 'success');
         }
@@ -1524,7 +1541,17 @@
       } catch (e) {
         showToast(e.message, 'error');
       }
-    };
+    }
+
+    $('addKeyBtn').onclick = submitAddKey;
+
+    // 支持在输入框中按回车快速生成
+    $('newKeyName').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') submitAddKey();
+    });
+    $('newKeyValue').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') submitAddKey();
+    });
 
     // 团队 Key 表格事件代理（复制、显隐、状态切换、删除）
     $('keysBody').onclick = async (ev) => {
