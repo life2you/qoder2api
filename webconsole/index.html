@@ -3,316 +3,645 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-      <title>qoder2api Console</title>
+  <title>qoder2api 控制台</title>
   <style>
     :root {
-      --bg: #f6f5f2;
-      --card: #fff;
-      --text: #1f1f1f;
-      --muted: #6b6b6b;
-      --line: #e8e6e1;
-      --ok: #1a7f37;
-      --bad: #cf222e;
-      --accent: #2563eb;
-      --warn: #9a6700;
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+      --border-focus: #38bdf8;
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --accent: #0284c7;
+      --ok: #10b981;
+      --bad: #ef4444;
+      --warn: #f59e0b;
+      --radius-lg: 16px;
+      --radius-md: 10px;
+      --radius-sm: 6px;
+      --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 20px -2px rgba(15, 23, 42, 0.06), 0 2px 6px -1px rgba(15, 23, 42, 0.03);
     }
+
     * { box-sizing: border-box; }
+
     body {
       margin: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
       background: var(--bg);
       color: var(--text);
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
     }
+
+    /* 顶部导航 Header */
     header {
-      padding: 20px 24px;
-      border-bottom: 1px solid var(--line);
-      background: var(--card);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      padding: 14px 28px;
+      background: rgba(255, 255, 255, 0.88);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--border);
       display: flex;
       justify-content: space-between;
       align-items: center;
+      gap: 16px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+    }
+
+    .brand-area {
+      display: flex;
+      align-items: center;
       gap: 12px;
     }
-    h1 { margin: 0; font-size: 20px; }
-    h3 { margin: 0 0 12px; font-size: 16px; }
-    .muted { color: var(--muted); font-size: 13px; }
-    main {
-      max-width: 1100px;
-      margin: 0 auto;
-      padding: 24px;
-      display: grid;
-      gap: 16px;
+
+    .brand-logo {
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #38bdf8 0%, #2563eb 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
     }
-    .card {
-      background: var(--card);
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      padding: 16px;
+
+    .brand-logo svg {
+      width: 18px;
+      height: 18px;
+      fill: none;
+      stroke: #fff;
+      stroke-width: 2.2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
     }
-    .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+
+    .brand-title h1 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+
+    .brand-title .sub {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
     .pill {
       display: inline-flex;
       align-items: center;
       gap: 6px;
       border-radius: 999px;
-      padding: 4px 10px;
+      padding: 5px 12px;
       font-size: 12px;
-      border: 1px solid var(--line);
-      background: #fafafa;
+      font-weight: 500;
+      border: 1px solid var(--border);
+      background: #f1f5f9;
+      color: #334155;
     }
+
+    .pill.user-pill {
+      background: #eff6ff;
+      border-color: #bfdbfe;
+      color: #1e40af;
+    }
+
     .dot {
-      width: 8px; height: 8px; border-radius: 50%;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
       background: var(--bad);
+      transition: all 0.3s ease;
     }
-    .dot.on { background: var(--ok); }
-    button, input, select {
+
+    .dot.on {
+      background: var(--ok);
+      box-shadow: 0 0 10px rgba(16, 185, 129, 0.6);
+    }
+
+    /* 主内容布局 */
+    main {
+      max-width: 1160px;
+      margin: 0 auto;
+      padding: 24px;
+      display: grid;
+      gap: 20px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 20px 24px;
+      box-shadow: var(--shadow-md);
+      transition: box-shadow 0.2s ease;
+    }
+
+    .card:hover {
+      box-shadow: 0 8px 26px -4px rgba(15, 23, 42, 0.08), 0 3px 8px -1px rgba(15, 23, 42, 0.04);
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #f1f5f9;
+    }
+
+    h3 {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 600;
+      color: #0f172a;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .muted {
+      color: var(--text-muted);
+      font-size: 13px;
+    }
+
+    .row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    @media (max-width: 860px) {
+      .grid-2 { grid-template-columns: 1fr; }
+      header { flex-direction: column; align-items: flex-start; }
+      main { padding: 16px; }
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      color: #334155;
+      margin-bottom: 6px;
+    }
+
+    /* 表单与按钮 */
+    input, select {
+      width: 100%;
       font: inherit;
-      border-radius: 8px;
-      border: 1px solid var(--line);
-      padding: 8px 12px;
-      background: #fff;
-    }
-    button {
-      cursor: pointer;
-      background: var(--accent);
-      color: #fff;
-      border-color: var(--accent);
-    }
-    button.secondary {
-      background: #fff;
+      font-size: 13.5px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border);
+      padding: 9px 13px;
+      background: #ffffff;
       color: var(--text);
-      border-color: var(--line);
+      outline: none;
+      transition: all 0.2s ease;
     }
+
+    input:focus, select:focus {
+      border-color: var(--border-focus);
+      box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15);
+    }
+
+    button {
+      font: inherit;
+      font-size: 13.5px;
+      font-weight: 500;
+      border-radius: var(--radius-md);
+      border: 1px solid transparent;
+      padding: 8px 16px;
+      background: var(--primary);
+      color: #ffffff;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.18s ease;
+      white-space: nowrap;
+    }
+
+    button:hover {
+      background: var(--primary-hover);
+      box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
+    }
+
+    button:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+      box-shadow: none !important;
+    }
+
+    button.secondary {
+      background: #ffffff;
+      color: #334155;
+      border-color: var(--border);
+    }
+
+    button.secondary:hover {
+      background: #f8fafc;
+      border-color: #cbd5e1;
+      box-shadow: var(--shadow-sm);
+    }
+
     button.danger {
       background: #fff;
       color: var(--bad);
-      border-color: #f0c2c6;
+      border-color: #fecaca;
     }
-    button:disabled { opacity: .6; cursor: not-allowed; }
-    table { width: 100%; border-collapse: collapse; }
+
+    button.danger:hover {
+      background: #fef2f2;
+      border-color: #f87171;
+    }
+
+    button.success-action {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: #fff;
+    }
+
+    button.success-action:hover {
+      background: linear-gradient(135deg, #34d399 0%, #047857 100%);
+      box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+    }
+
+    /* 表格 */
+    table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+    }
+
     th, td {
       text-align: left;
-      padding: 10px 8px;
-      border-bottom: 1px solid var(--line);
-      font-size: 14px;
-      vertical-align: top;
+      padding: 12px 14px;
+      border-bottom: 1px solid #f1f5f9;
+      font-size: 13.5px;
+      vertical-align: middle;
     }
-    th { color: var(--muted); font-weight: 600; }
+
+    th {
+      background: #f8fafc;
+      color: #475569;
+      font-weight: 600;
+      font-size: 12.5px;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    tbody tr {
+      transition: background 0.15s;
+    }
+
+    tbody tr:hover {
+      background: #f8fafc;
+    }
+
+    /* 额度进度条与卡片 */
+    .quota {
+      font-size: 12px;
+      line-height: 1.5;
+      color: var(--text-muted);
+      max-width: 320px;
+    }
+
+    .quota strong { color: var(--text); font-weight: 600; }
+
+    .quota-block {
+      display: inline-block;
+      margin-right: 8px;
+      padding: 8px 10px;
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 11.5px;
+    }
+
+    .addon-block {
+      border-left: 3px solid #10b981;
+    }
+
+    .bar {
+      height: 6px;
+      background: #e2e8f0;
+      border-radius: 999px;
+      overflow: hidden;
+      margin-top: 5px;
+      width: 130px;
+    }
+
+    .bar > i {
+      display: block;
+      height: 100%;
+      background: var(--primary);
+      border-radius: 999px;
+      transition: width 0.3s ease;
+    }
+
+    .bar.warn > i { background: var(--warn); }
+    .bar.bad > i { background: var(--bad); }
+
+    /* 代码块与展示 */
     pre {
       margin: 0;
       white-space: pre-wrap;
       word-break: break-word;
       font-size: 12px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
       max-height: 280px;
       overflow: auto;
-      background: #fafafa;
-      border-radius: 8px;
-      padding: 12px;
-      border: 1px solid var(--line);
+      background: #0f172a;
+      color: #e2e8f0;
+      border-radius: var(--radius-md);
+      padding: 14px;
+      border: 1px solid #1e293b;
     }
-    .grid-2 {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
+
+    .oauth-box {
+      border: 1px dashed #93c5fd;
+      border-radius: var(--radius-md);
+      padding: 14px;
+      background: #eff6ff;
+      margin-top: 14px;
     }
-    @media (max-width: 860px) {
-      .grid-2 { grid-template-columns: 1fr; }
-    }
-    label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px; }
-    input, select { width: 100%; }
-    .msg { font-size: 13px; color: var(--muted); min-height: 18px; }
+
+    a { color: var(--primary); text-decoration: none; font-weight: 500; }
+    a:hover { text-decoration: underline; }
+
+    .msg { font-size: 13px; color: var(--text-muted); }
     .msg.err { color: var(--bad); }
     .msg.ok { color: var(--ok); }
-    .quota {
-      font-size: 12px;
-      line-height: 1.5;
-      color: var(--muted);
-      width: 100%;
-      max-width: 300px;
+
+    /* Toast 浮动通知系统 */
+    #toastContainer {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      pointer-events: none;
     }
-    .quota strong { color: var(--text); font-weight: 600; }
-    .quota-block {
-      display: inline-block;
-      margin-right: 8px;
-      padding: 6px 8px;
-      background: rgba(255,255,255,0.05);
-      border-radius: 4px;
-      vertical-align: top;
-      font-size: 11px;
+
+    .toast {
+      pointer-events: auto;
+      min-width: 260px;
+      max-width: 420px;
+      padding: 12px 16px;
+      border-radius: 12px;
+      font-size: 13.5px;
+      font-weight: 500;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.12), 0 8px 10px -6px rgba(0, 0, 0, 0.08);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: #fff;
+      animation: toastIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      transition: all 0.25s ease;
     }
-    .addon-block {
-      border-left: 2px solid #4caf50;
-      margin-top: 0;
+
+    .toast.hide {
+      opacity: 0;
+      transform: translateY(-8px) scale(0.95);
     }
-    .bar {
-      height: 5px;
-      background: #eee;
-      border-radius: 999px;
-      overflow: hidden;
-      margin-top: 3px;
-      width: 120px;
+
+    .toast.success { background: #059669; }
+    .toast.error   { background: #dc2626; }
+    .toast.warning { background: #d97706; }
+    .toast.info    { background: #0284c7; }
+
+    @keyframes toastIn {
+      from { opacity: 0; transform: translateY(-12px) scale(0.96); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
     }
-    .bar > i {
-      display: block;
-      height: 100%;
-      background: var(--accent);
-    }
-    .bar.warn > i { background: var(--warn); }
-    .bar.bad > i { background: var(--bad); }
-    .oauth-box {
-      border: 1px dashed var(--line);
-      border-radius: 10px;
-      padding: 12px;
-      background: #fafafa;
-      margin-top: 12px;
-    }
-    a { color: var(--accent); }
   </style>
 </head>
 <body>
+  <!-- 全局 Toast 容器 -->
+  <div id="toastContainer"></div>
+
+  <!-- 顶部导航 -->
   <header>
-    <div>
-      <h1>qoder2api</h1>
-      <div class="muted">轻量 Bridge + Web · CN 3588/8963 · Global 3589/8964</div>
+    <div class="brand-area">
+      <div class="brand-logo">
+        <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path></svg>
+      </div>
+      <div class="brand-title">
+        <h1>qoder2api 控制台</h1>
+        <div class="sub">轻量 Bridge + Web · CN 3588/8963 · Global 3589/8964</div>
+      </div>
     </div>
-    <div class="row">
-      <span class="pill"><span id="statusDot" class="dot"></span><span id="statusText">checking</span></span>
-      <button class="secondary" id="refreshBtn">刷新</button>
-      <button class="secondary" id="logoutBtn">退出登录</button>
+    <div class="header-actions">
+      <span class="pill user-pill">
+        👤 当前账号: <strong id="currentUsername">admin</strong>
+      </span>
+      <span class="pill">
+        <span id="statusDot" class="dot"></span>
+        <span id="statusText">检测中...</span>
+      </span>
+      <button class="secondary" id="refreshBtn">🔄 刷新</button>
+      <button class="secondary" id="logoutBtn" style="color: #dc2626;">🚪 退出</button>
     </div>
   </header>
 
   <main>
+    <!-- 服务状态卡片 -->
     <section class="card">
-      <h3>状态</h3>
+      <div class="card-header">
+        <h3>⚡ 服务运行状态</h3>
+      </div>
       <div class="row" id="statusMeta"></div>
     </section>
 
+    <!-- 账号列表与签到卡片 -->
     <section class="card">
-      <h3>添加账号</h3>
+      <div class="card-header">
+        <h3>👥 账号管理与配额</h3>
+        <span class="muted">已接入的多账号池支持自动轮换与故障转移</span>
+      </div>
+
+      <div class="row" style="margin-bottom:16px;">
+        <button id="checkinBtn" class="success-action">🎁 每日签到领 100 Credits</button>
+        <label class="pill" style="cursor:pointer; margin-bottom:0">
+          <input type="checkbox" id="autoCheckinToggle" style="width:auto; margin-right:6px">
+          每日定时自动签到
+        </label>
+        <input id="autoCheckinTimes" placeholder="09:15,17:00" style="width:170px" title="每天自动签到的时间，逗号分隔，HH:MM；留空=10:00">
+        <button class="secondary" id="autoCheckinTimesSave">保存签到时间</button>
+        <span class="msg" id="checkinMsg"></span>
+      </div>
+
+      <div id="checkinResult" style="margin-bottom:16px; display:none">
+        <pre id="checkinBox"></pre>
+      </div>
+
+      <div style="overflow-x: auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>账号名称 / 邮箱</th>
+              <th>套餐 / 模式 / 区域</th>
+              <th>额度消耗与拓展包</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="accountBody">
+            <tr><td colspan="4" class="muted">加载中...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 添加账号卡片 -->
+    <section class="card">
+      <div class="card-header">
+        <h3>➕ 添加新账号</h3>
+        <span class="muted">支持 OAuth 网页授权登录或直接填入 PAT Token</span>
+      </div>
       <div class="grid-2">
         <div>
-          <label>Region</label>
+          <label>账号所属 Region (国内 / 国际)</label>
           <select id="regionInput">
-            <option value="global">global</option>
-            <option value="cn">cn</option>
+            <option value="global">global (国际版)</option>
+            <option value="cn">cn (国内版)</option>
           </select>
         </div>
         <div>
-          <label>PAT（可选，与 OAuth 二选一）</label>
-          <input id="patInput" placeholder="粘贴 Qoder PAT" />
+          <label>PAT Token（可选，与 OAuth 二选一）</label>
+          <input id="patInput" placeholder="粘贴 Qoder PAT Token" />
         </div>
       </div>
-      <div class="row" style="margin-top:12px">
-        <button id="oauthBtn">OAuth 登录</button>
+      <div class="row" style="margin-top:14px">
+        <button id="oauthBtn">🌐 OAuth 浏览器授权</button>
         <button class="secondary" id="addBtn">用 PAT 添加</button>
         <button class="secondary" id="cancelOauthBtn" disabled>取消 OAuth</button>
         <span class="msg" id="addMsg"></span>
       </div>
       <div class="oauth-box" id="oauthBox" style="display:none">
-        <div class="muted">请在浏览器完成授权，完成后会自动保存账号 JSON 与 token。</div>
+        <div class="muted">请在弹出的浏览器页面中完成 Qoder 账号授权：</div>
         <div style="margin-top:8px">
-          登录链接：
-          <a id="oauthLink" href="#" target="_blank" rel="noopener">打开登录页</a>
+          若未自动弹出，请手动点击：<a id="oauthLink" href="#" target="_blank" rel="noopener">打开授权页面</a>
         </div>
         <div class="msg" id="oauthMsg" style="margin-top:8px">等待授权中...</div>
       </div>
     </section>
 
-    <section class="card">
-      <h3>账号列表 / 额度</h3>
-      <div class="row" style="margin-bottom:12px">
-        <button id="checkinBtn">🎁 每日签到领 100 Credits</button>
-        <label class="pill" style="cursor:pointer; margin-bottom:0">
-          <input type="checkbox" id="autoCheckinToggle" style="width:auto; margin-right:6px">
-          自动签到
-        </label>
-        <input id="autoCheckinTimes" placeholder="09:15,17:00" style="width:150px" title="每天自动签到的时间，逗号分隔，HH:MM；留空=10:00">
-        <button class="secondary" id="autoCheckinTimesSave">保存时间</button>
-        <span class="msg" id="checkinMsg"></span>
-      </div>
-      <div id="checkinResult" style="margin-bottom:12px; display:none">
-        <pre id="checkinBox"></pre>
-      </div>
-      <table>
-        <thead>
-          <tr>
-            <th>账号</th>
-            <th>Plan / 模式</th>
-            <th>额度</th>
-            <th>操作</th>
-          </tr>
-        </thead>
-        <tbody id="accountBody">
-          <tr><td colspan="4" class="muted">加载中...</td></tr>
-        </tbody>
-      </table>
-    </section>
-
+    <!-- 模型与日志 -->
     <section class="card grid-2">
       <div>
-        <h3>模型</h3>
-        <div id="modelsBox">加载中...</div>
+        <div class="card-header">
+          <h3>🤖 支持模型</h3>
+        </div>
+        <div id="modelsBox" style="overflow-x: auto;">加载中...</div>
       </div>
       <div>
-        <h3>最近日志</h3>
+        <div class="card-header">
+          <h3>📜 运行日志 (最新)</h3>
+        </div>
         <pre id="logsBox">加载中...</pre>
       </div>
     </section>
 
+    <!-- NewAPI 中转与连接配置 -->
     <section class="card">
-      <h3>NewAPI / 中转站接入</h3>
-      <div class="muted" style="margin-bottom:12px">
-        把下面地址和密钥填到 NewAPI 渠道（OpenAI 兼容）。本地默认只监听 127.0.0.1。
+      <div class="card-header">
+        <h3>🔗 API 接入与中转配置</h3>
+        <span class="muted">配置接入到 NewAPI、NextChat、Claude Code 等兼容客户端</span>
       </div>
+
       <div class="grid-2">
         <div>
-          <label>OpenAI Base URL（推荐）</label>
+          <label>OpenAI 兼容 Base URL（推荐）</label>
           <div class="row">
             <input id="openaiBaseUrl" readonly />
-            <button class="secondary" type="button" data-copy="openaiBaseUrl">复制</button>
+            <button class="secondary copy-btn" type="button" data-copy="openaiBaseUrl">复制</button>
           </div>
         </div>
         <div>
-          <label>Root Base URL（Claude 等）</label>
+          <label>Root Base URL（Claude 等原生端点）</label>
           <div class="row">
             <input id="rootBaseUrl" readonly />
-            <button class="secondary" type="button" data-copy="rootBaseUrl">复制</button>
+            <button class="secondary copy-btn" type="button" data-copy="rootBaseUrl">复制</button>
           </div>
         </div>
       </div>
-      
-      <div style="margin-top:16px">
+
+      <div class="grid-2" style="margin-top:16px;">
         <div>
-          <label>API Key / 密钥（可修改）</label>
+          <label>Bridge API Key / 密钥（访问 API 凭证）</label>
           <div class="row">
             <input id="bridgeTokenInput" type="password" placeholder="qccg" />
-            <button class="secondary" type="button" data-copy="bridgeTokenInput">复制</button>
+            <button class="secondary copy-btn" type="button" data-copy="bridgeTokenInput">复制</button>
             <button class="secondary" type="button" id="toggleBridgeToken">显示</button>
           </div>
         </div>
-        
-        <div style="margin-top:12px">
-          <label>Bridge 端口（可修改）</label>
+        <div>
+          <label>Bridge 端口（默认 8963）</label>
           <input id="bridgePortInput" type="number" min="1" max="65535" placeholder="8963" />
         </div>
-        
-        <div style="margin-top:12px">
-          <label>控制台登录密码（可修改，留空不改）</label>
-          <input id="consolePasswordInput" type="password" placeholder="不修改请留空" autocomplete="new-password" style="width: 200px; margin-bottom: 6px;" />
-          <button class="secondary" type="button" id="toggleConsolePassword">显示</button>
-          <div style="margin-top:8px; font-size: 11px; color: var(--muted);">
-            <input id="oldPassword1" type="password" placeholder="输入旧密码 1/2" style="width: 140px; margin-right: 6px;" />
-            <input id="oldPassword2" type="password" placeholder="输入旧密码 2/2" style="width: 140px; margin-right: 6px;" />
-            <input id="newPassword" type="password" placeholder="新密码（可选）" style="width: 140px;" />
+      </div>
+
+      <!-- 控制台安全设置 -->
+      <div style="margin-top:24px; padding-top:18px; border-top: 1px dashed var(--border);">
+        <div class="card-header" style="border-bottom:none; padding-bottom:0; margin-bottom:12px;">
+          <h3>🛡️ 控制台账号与密码管理</h3>
+          <span class="muted">修改当前 Web 管理页面的登录账号或密码（不修改请留空）</span>
+        </div>
+
+        <div class="grid-2">
+          <div>
+            <label>控制台登录账号</label>
+            <input id="consoleUsernameInput" type="text" placeholder="例如 admin" />
+          </div>
+          <div>
+            <label>当前原密码 <span class="muted">（修改账号或密码时作为身份凭据）</span></label>
+            <div class="row">
+              <input id="oldPasswordInput" type="password" placeholder="请输入当前密码（默认 admin888）" />
+              <button class="secondary" type="button" id="toggleOldPassword">显示</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid-2" style="margin-top:12px;">
+          <div>
+            <label>新密码（留空表示不改密码）</label>
+            <input id="newPasswordInput" type="password" placeholder="请输入新密码" />
+          </div>
+          <div>
+            <label>确认新密码</label>
+            <input id="confirmPasswordInput" type="password" placeholder="请再次输入新密码" />
           </div>
         </div>
       </div>
-      <div class="row" style="margin-top:12px">
-        <button id="saveConnBtn">保存密钥/端口/密码</button>
-        <button class="secondary" id="copyNewapiBtn">复制 NewAPI 配置 JSON</button>
+
+      <div class="row" style="margin-top:20px;">
+        <button id="saveConnBtn" style="padding: 10px 22px;">💾 保存配置与密码</button>
+        <button class="secondary" id="copyNewapiBtn">📋 复制 NewAPI 渠道 JSON</button>
         <span class="msg" id="connMsg"></span>
       </div>
-      <pre id="newapiBox" style="margin-top:12px"></pre>
+
+      <pre id="newapiBox" style="margin-top:14px; display:none;"></pre>
     </section>
   </main>
 
@@ -321,6 +650,30 @@
     let currentLoginID = '';
     let oauthAbort = false;
     const quotaCache = {};
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    // 全局优雅 Toast 提示
+    function showToast(message, type = 'info', duration = 3000) {
+      const container = $('toastContainer');
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      toast.textContent = message;
+      container.appendChild(toast);
+
+      setTimeout(() => {
+        toast.classList.add('hide');
+        setTimeout(() => toast.remove(), 250);
+      }, duration);
+    }
 
     async function api(path, options = {}) {
       const res = await fetch(path, {
@@ -339,12 +692,12 @@
 
     function setStatus(running, extra = {}) {
       $('statusDot').classList.toggle('on', !!running);
-      $('statusText').textContent = running ? 'Bridge running' : 'Bridge stopped';
+      $('statusText').textContent = running ? '运行中 (Running)' : '已停止 (Stopped)';
       $('statusMeta').innerHTML = `
-        <span class="pill">Bridge: ${running ? 'ON' : 'OFF'}</span>
-        <span class="pill">Port: ${extra.port || 8963}</span>
-        <span class="pill">Active: ${extra.active_account || '-'}</span>
-        <span class="pill">API: ${extra.api_mode || '-'}</span>
+        <span class="pill">Bridge 状态: <strong>${running ? '正常运行' : '已停止'}</strong></span>
+        <span class="pill">API 端口: <strong>${extra.port || 8963}</strong></span>
+        <span class="pill">当前活跃账号: <strong>${extra.active_account || '无'}</strong></span>
+        <span class="pill">模式: <strong>${extra.api_mode || 'OpenAI/Claude'}</strong></span>
       `;
     }
 
@@ -353,6 +706,7 @@
       const key = conn.api_key || settings.bridge_token || 'qccg';
       const root = conn.base_url || `http://127.0.0.1:${port}`;
       const openai = conn.openai_base_url || `${root}/v1`;
+
       $('rootBaseUrl').value = root;
       $('openaiBaseUrl').value = openai;
       if (document.activeElement !== $('bridgeTokenInput')) {
@@ -361,8 +715,13 @@
       if (document.activeElement !== $('bridgePortInput')) {
         $('bridgePortInput').value = port;
       }
+      if (settings.console_username && document.activeElement !== $('consoleUsernameInput')) {
+        $('consoleUsernameInput').value = settings.console_username;
+        $('currentUsername').textContent = settings.console_username;
+      }
+
       const cfg = {
-        name: 'QCCG / Qoder',
+        name: 'Qoder API',
         type: 'openai',
         base_url: openai,
         api_key: key,
@@ -375,7 +734,12 @@
       try {
         const data = await api('/api/settings');
         fillConnection(data.connection || {}, data.settings || {});
-        // 同步自动签到开关
+        if (data.console_username) {
+          $('currentUsername').textContent = data.console_username;
+          if (document.activeElement !== $('consoleUsernameInput')) {
+            $('consoleUsernameInput').value = data.console_username;
+          }
+        }
         const st = data.settings || {};
         if (document.activeElement !== $('autoCheckinToggle')) {
           $('autoCheckinToggle').checked = !!st.auto_checkin;
@@ -390,7 +754,7 @@
       }
     }
 
-    // 自动签到开关变更
+    // 自动签到开关
     $('autoCheckinToggle').onchange = async (ev) => {
       const enabled = ev.target.checked;
       $('checkinMsg').className = 'msg';
@@ -402,10 +766,12 @@
         });
         $('checkinMsg').className = 'msg ok';
         $('checkinMsg').textContent = enabled ? '✅ 自动签到已开启' : '自动签到已关闭';
+        showToast(enabled ? '每日自动签到已开启' : '自动签到已关闭', 'success');
       } catch (e) {
         ev.target.checked = !enabled;
         $('checkinMsg').className = 'msg err';
         $('checkinMsg').textContent = e.message;
+        showToast(e.message, 'error');
       }
     };
 
@@ -421,10 +787,13 @@
           body: JSON.stringify({ auto_checkin_times: times }),
         });
         $('checkinMsg').className = 'msg ok';
-        $('checkinMsg').textContent = times.length ? ('✅ 签到时间已设为 ' + times.join(' / ')) : '✅ 已恢复默认（10:00）';
+        const txt = times.length ? ('签到时间已设为 ' + times.join(' / ')) : '已恢复默认时间（10:00）';
+        $('checkinMsg').textContent = '✅ ' + txt;
+        showToast(txt, 'success');
       } catch (e) {
         $('checkinMsg').className = 'msg err';
         $('checkinMsg').textContent = e.message;
+        showToast(e.message, 'error');
       }
     };
 
@@ -435,26 +804,26 @@
       const rows = models.map(m => {
         const ctx = (m.max_input_tokens || m.context_window) != null ? Number(m.max_input_tokens || m.context_window).toLocaleString() : '-';
         const maxOut = m.max_output_tokens != null ? Number(m.max_output_tokens).toLocaleString() : '-';
-        const name = m.display_name || m.id || m.key || '-';
-        const key = m.id || m.key || '-';
+        const name = escapeHtml(m.display_name || m.id || m.key || '-');
+        const key = escapeHtml(m.id || m.key || '-');
         return `<tr>
-          <td>${name}</td>
-          <td>${key}</td>
+          <td><strong>${name}</strong></td>
+          <td><code>${key}</code></td>
           <td>${ctx}</td>
           <td>${maxOut}</td>
-          <td>${m.is_reasoning ? '✅' : ''}</td>
+          <td>${m.is_reasoning ? '✅' : '-'}</td>
           <td>${m.enable === false ? '❌' : '✅'}</td>
         </tr>`;
       }).join('');
       return `<table>
         <thead>
           <tr>
-            <th>模型</th>
-            <th>Key</th>
-            <th>上下文</th>
+            <th>模型名称</th>
+            <th>标识 Key</th>
+            <th>上下文窗口</th>
             <th>最大输出</th>
             <th>推理</th>
-            <th>启用</th>
+            <th>状态</th>
           </tr>
         </thead>
         <tbody>${rows}</tbody>
@@ -473,18 +842,10 @@
     }
 
     function renderQuota(q) {
-      
-      if (!q) {
-        return '<div class="quota muted">加载中...</div>';
-      }
-      if (q.error) {
-        return `<div class="quota msg err">${q.error}</div>`;
-      }
-      
-      
+      if (!q) return '<div class="quota muted">加载中...</div>';
+      if (q.error) return `<div class="quota msg err">${q.error}</div>`;
+
       let html = '';
-      
-      // 显示套餐内 Credits
       const userBucket = q.user_quota;
       if (userBucket) {
         const u = userBucket.used || 0;
@@ -494,17 +855,16 @@
         const cls = pct >= 90 ? 'bad' : (pct >= 70 ? 'warn' : '');
         html += `
           <div class="quota-block">
-            <strong>${q.plan || '-'}</strong><br/>
-            已用 ${fmtNum(u)} / ${fmtNum(t)} · 剩余 ${fmtNum(r)}<br/>
+            <strong>${q.plan || '套餐配额'}</strong><br/>
+            已用 ${fmtNum(u)} / ${fmtNum(t)} · 剩余 <strong>${fmtNum(r)}</strong><br/>
             <div class="bar ${cls}"><i style="width:${pct}%"></i></div>
-            ${userBucket.reset_time ? `<div>重置：${userBucket.reset_time}</div>` : ''}
+            ${userBucket.reset_time ? `<div style="margin-top:3px;color:var(--text-muted)">重置时间: ${userBucket.reset_time}</div>` : ''}
           </div>
         `;
       } else {
         html += `<div class="quota muted">无套餐额度</div>`;
       }
-      
-      // 显示个人拓展包 - 独立显示
+
       const addonBucket = q.addon_quota;
       if (addonBucket && (addonBucket.total > 0 || addonBucket.remaining > 0)) {
         const u = addonBucket.used || 0;
@@ -514,24 +874,20 @@
         const cls = pct >= 90 ? 'bad' : (pct >= 70 ? 'warn' : '');
         html += `
           <div class="quota-block addon-block">
-            <strong>个人拓展包</strong>: 
-            已用 ${fmtNum(u)} / ${fmtNum(t)} · 剩余 ${fmtNum(r)}<br/>
+            <strong>个人拓展包</strong><br/>
+            已用 ${fmtNum(u)} / ${fmtNum(t)} · 剩余 <strong>${fmtNum(r)}</strong><br/>
             <div class="bar ${cls}"><i style="width:${pct}%"></i></div>
           </div>
         `;
-      } else {
       }
-      
       return html;
     }
-
-
 
     function renderAccounts(list, pool) {
       const poolById = {};
       ((pool && pool.slots) || []).forEach(s => { poolById[s.id] = s; });
       if (!list || !list.length) {
-        $('accountBody').innerHTML = '<tr><td colspan="4" class="muted">暂无账号</td></tr>';
+        $('accountBody').innerHTML = '<tr><td colspan="4" class="muted">暂未添加账号</td></tr>';
         return;
       }
       $('accountBody').innerHTML = list.map(a => {
@@ -540,29 +896,31 @@
         const coolMs = slot ? (slot.cooling_remaining_ms || 0) : 0;
         const poolBadge = slot
           ? (coolMs > 0
-            ? `<span class="pill" style="border-color:#e6b800;background:#fff8e1;color:#8a6d00">冷却中 ${fmtDur(coolMs)}</span>`
-            : `<span class="pill" style="border-color:#8bc34a;background:#f1f8e9;color:#33691e">可用</span>`)
+            ? `<span class="pill" style="border-color:#fde68a;background:#fef3c7;color:#92400e">冷却中 ${fmtDur(coolMs)}</span>`
+            : `<span class="pill" style="border-color:#bbf7d0;background:#dcfce7;color:#166534">池可用</span>`)
           : '';
         const poolNote = (slot && coolMs > 0 && slot.last_error)
-          ? `<div class="muted" style="font-size:11px">${slot.last_error}</div>` : '';
+          ? `<div class="muted" style="font-size:11px;color:#dc2626">${slot.last_error}</div>` : '';
         return `
-        <tr data-id="${a.id}">
+        <tr data-id="${escapeHtml(a.id)}">
           <td>
-            <div><strong>${a.name || a.id}</strong> ${a.active ? '<span class="pill">active</span>' : ''} ${poolBadge}</div>
-            <div class="muted">${a.email || '-'}</div>
+            <div><strong>${escapeHtml(a.name || a.id)}</strong> ${a.active ? '<span class="pill user-pill">已激活</span>' : ''} ${poolBadge}</div>
+            <div class="muted">${escapeHtml(a.email || '-')}</div>
             ${poolNote}
           </td>
           <td>
-            <div>${a.plan || '-'}</div>
-            <div class="muted">${a.auth_mode || '-'} / ${a.api_mode || '-'} / ${a.region || 'global'}</div>
+            <div><strong>${escapeHtml(a.plan || '-')}</strong></div>
+            <div class="muted">${escapeHtml(a.auth_mode || '-')} · ${escapeHtml(a.region || 'global')}</div>
           </td>
-          <td class="quota-cell" data-quota-id="${a.id}">${renderQuota(cachedQuota)}</td>
-          <td class="row">
-            <button class="secondary" data-act="activate" data-id="${a.id}" ${a.active ? 'disabled' : ''}>激活</button>
-            <button class="secondary" data-act="quota" data-id="${a.id}">刷新额度</button>
-            <button class="secondary" data-act="checkin" data-id="${a.id}">🎁 签到</button>
-            <button class="secondary" data-act="cool" data-id="${a.id}">冷却</button>
-            <button class="danger" data-act="delete" data-id="${a.id}">删除</button>
+          <td class="quota-cell" data-quota-id="${escapeHtml(a.id)}">${renderQuota(cachedQuota)}</td>
+          <td>
+            <div class="row">
+              <button class="secondary" data-act="activate" data-id="${escapeHtml(a.id)}" ${a.active ? 'disabled' : ''}>${a.active ? '当前活跃' : '设为激活'}</button>
+              <button class="secondary" data-act="quota" data-id="${escapeHtml(a.id)}">刷新额度</button>
+              <button class="secondary" data-act="checkin" data-id="${escapeHtml(a.id)}">🎁 签到</button>
+              <button class="secondary" data-act="cool" data-id="${escapeHtml(a.id)}">冷却</button>
+              <button class="danger" data-act="delete" data-id="${escapeHtml(a.id)}">删除</button>
+            </div>
           </td>
         </tr>
       `}).join('');
@@ -570,8 +928,8 @@
 
     async function loadQuota(id) {
       try {
-        const q = await api('/api/accounts/quota?id=' + encodeURIComponent(id));
-        quotaCache[id] = q;
+        const res = await api('/api/accounts/quota', { method: 'POST', body: JSON.stringify({ id }) });
+        quotaCache[id] = res;
       } catch (e) {
         quotaCache[id] = { error: e.message };
       }
@@ -581,21 +939,20 @@
 
     async function refresh() {
       try {
-        const status = await api('/api/status');
-        setStatus(!!status.running, status);
+        const st = await api('/api/status');
+        setStatus(st.running, st);
       } catch (e) {
-        setStatus(false, {});
+        setStatus(false);
       }
 
       await loadConnection();
 
       try {
-        let pool = null;
-        try { pool = await api('/api/pool'); } catch (e) {}
-        const accounts = await api('/api/accounts');
-        renderAccounts(accounts, pool);
-        // 并行拉额度
-        (accounts || []).forEach(a => loadQuota(a.id));
+        const res = await api('/api/accounts');
+        renderAccounts(res.accounts || [], res.pool || {});
+        (res.accounts || []).forEach(a => {
+          if (!quotaCache[a.id]) loadQuota(a.id);
+        });
       } catch (e) {
         $('accountBody').innerHTML = `<tr><td colspan="4" class="msg err">${e.message}</td></tr>`;
       }
@@ -610,19 +967,32 @@
 
       try {
         const logs = await api('/api/logs');
-        const lines = (logs || []).slice(-40).map(x => `[${x.level}] ${x.message}`).join('\\n');
+        const lines = (logs || []).slice(-40).map(x => `[${x.level}] ${x.message}`).join('\n');
         $('logsBox').textContent = lines || '(empty)';
       } catch (e) {
         $('logsBox').textContent = e.message;
       }
     }
 
-    // 未登录则跳登录页
-    fetch('/api/auth/me').then(r => {
-      if (!r.ok) location.replace('/login.html');
+    // 鉴权检测，获取当前登录用户信息
+    fetch('/api/auth/me').then(async r => {
+      if (!r.ok) {
+        location.replace('/login.html');
+        return;
+      }
+      const me = await r.json().catch(() => ({}));
+      if (me.username) {
+        $('currentUsername').textContent = me.username;
+        $('consoleUsernameInput').value = me.username;
+      }
     }).catch(() => location.replace('/login.html'));
 
-    $('refreshBtn').onclick = refresh;
+    $('refreshBtn').onclick = () => {
+      refresh();
+      showToast('数据已刷新', 'info', 1500);
+    };
+
+    // 一键全部签到
     $('checkinBtn').onclick = async () => {
       $('checkinBtn').disabled = true;
       $('checkinMsg').className = 'msg';
@@ -637,9 +1007,11 @@
         if (summary.no_campaign) parts.push(`无活动 ${summary.no_campaign} 个`);
         if (summary.no_token) parts.push(`无token ${summary.no_token} 个`);
         if (summary.error) parts.push(`失败 ${summary.error} 个`);
+        const resultText = parts.join('，') || '签到完成';
         $('checkinMsg').className = summary.error ? 'msg err' : 'msg ok';
-        $('checkinMsg').textContent = parts.join('，') || '完成';
-        // 展示连续签到统计
+        $('checkinMsg').textContent = resultText;
+        showToast(resultText, summary.error ? 'warning' : 'success');
+
         const lines = (res.results || []).map(r => {
           let line = `${r.account}: ${r.message}`;
           if (r.streak_days) line += `（🔥连续${r.streak_days}天 · 累计${r.total_claim_days}天 · 共${r.total_reward_credits}分）`;
@@ -650,10 +1022,13 @@
       } catch (e) {
         $('checkinMsg').className = 'msg err';
         $('checkinMsg').textContent = e.message;
+        showToast(e.message, 'error');
       } finally {
         $('checkinBtn').disabled = false;
       }
     };
+
+    // 登出
     $('logoutBtn').onclick = async () => {
       try {
         await api('/api/auth/logout', { method: 'POST', body: '{}' });
@@ -661,6 +1036,7 @@
       location.replace('/login.html');
     };
 
+    // 复制按钮通用事件
     document.querySelectorAll('[data-copy]').forEach(btn => {
       btn.onclick = async () => {
         const id = btn.getAttribute('data-copy');
@@ -668,95 +1044,102 @@
         const val = el ? el.value : '';
         try {
           await navigator.clipboard.writeText(val);
-          $('connMsg').className = 'msg ok';
-          $('connMsg').textContent = '已复制';
         } catch {
           el.select();
           document.execCommand('copy');
-          $('connMsg').className = 'msg ok';
-          $('connMsg').textContent = '已复制';
         }
+        const originalText = btn.textContent;
+        btn.textContent = '已复制 ✓';
+        btn.style.color = '#10b981';
+        showToast('内容已复制到剪贴板', 'success', 2000);
+        setTimeout(() => {
+          btn.textContent = originalText;
+          btn.style.color = '';
+        }, 1500);
       };
     });
 
     $('copyNewapiBtn').onclick = async () => {
+      const box = $('newapiBox');
+      box.style.display = 'block';
       try {
-        await navigator.clipboard.writeText($('newapiBox').textContent);
-        $('connMsg').className = 'msg ok';
-        $('connMsg').textContent = 'NewAPI 配置已复制';
+        await navigator.clipboard.writeText(box.textContent);
+        showToast('NewAPI 渠道配置 JSON 已复制', 'success');
       } catch (e) {
-        $('connMsg').className = 'msg err';
-        $('connMsg').textContent = e.message;
+        showToast(e.message, 'error');
       }
     };
 
+    // 保存连接设置与控制台账号密码
     $('saveConnBtn').onclick = async () => {
       const port = Number($('bridgePortInput').value || 8963);
       const bridge_token = ($('bridgeTokenInput').value || '').trim() || 'qccg';
       
-      // 处理密码修改逻辑
-      const oldPassword1 = ($('oldPassword1').value || '').trim();
-      const oldPassword2 = ($('oldPassword2').value || '').trim();
-      const newPassword = ($('newPassword').value || '').trim();
-      const console_password_input = ($('consolePasswordInput').value || '').trim();
-      
-      let passwordData = null;
-      
-      // 如果用户输入了新密码或旧密码，则进行验证
-      if (newPassword || oldPassword1 || oldPassword2) {
-        if (!oldPassword1 || !oldPassword2) {
-          alert('请输入两次旧密码以验证身份');
+      const newUsername = ($('consoleUsernameInput').value || '').trim();
+      const oldPassword = ($('oldPasswordInput').value || '').trim();
+      const newPassword = ($('newPasswordInput').value || '').trim();
+      const confirmPassword = ($('confirmPasswordInput').value || '').trim();
+
+      const body = { port, bridge_token };
+
+      // 如果用户尝试修改账号或修改密码
+      const hasAccountChanges = newPassword || (newUsername && newUsername !== $('currentUsername').textContent);
+
+      if (hasAccountChanges) {
+        if (!oldPassword) {
+          showToast('修改控制台账号或密码时，必须输入“当前原密码”以验证身份', 'warning', 4000);
+          $('oldPasswordInput').focus();
           return;
         }
-        if (oldPassword1 !== oldPassword2) {
-          alert('两次输入的旧密码不一致');
+        if (newPassword && newPassword !== confirmPassword) {
+          showToast('两次输入的新密码不一致，请重新核对', 'error');
+          $('confirmPasswordInput').focus();
           return;
         }
-        
-        // 使用新格式发送密码数据
-        passwordData = {
-          old_password: oldPassword1,
-          new_password: newPassword || null
+
+        body.console_password_new = {
+          old_password: oldPassword,
+          new_password: newPassword || null,
+          new_username: newUsername || null,
         };
-      } else if (console_password_input) {
-        // 如果只输入了控制台密码字段（旧逻辑）
-        passwordData = console_password_input;
       }
-      
+
       $('connMsg').className = 'msg';
       $('connMsg').textContent = '保存中...';
+
       try {
-        const body = { port, bridge_token };
-        if (passwordData !== null) {
-          // 根据类型决定使用哪个字段
-          if (typeof passwordData === 'object') {
-            body.console_password_new = passwordData;
-          } else {
-            body.console_password = passwordData;
-          }
-        }
         const res = await api('/api/settings/save', {
           method: 'POST',
           body: JSON.stringify(body),
         });
+
         fillConnection(res.connection || {}, res.settings || {});
-        // 清空所有密码输入框
-        $('consolePasswordInput').value = '';
-        $('oldPassword1').value = '';
-        $('oldPassword2').value = '';
-        $('newPassword').value = '';
+
+        // 保存成功后清空安全输入框
+        $('oldPasswordInput').value = '';
+        $('newPasswordInput').value = '';
+        $('confirmPasswordInput').value = '';
+
         $('connMsg').className = 'msg ok';
         $('connMsg').textContent = res.note || '已保存';
+        showToast('设置与凭据保存成功！', 'success');
+
         await refresh();
       } catch (e) {
         $('connMsg').className = 'msg err';
         $('connMsg').textContent = e.message;
+        showToast(e.message, 'error');
       }
     };
 
+    // 添加 PAT
     $('addBtn').onclick = async () => {
       const pat = $('patInput').value.trim();
       const region = $('regionInput').value;
+      if (!pat) {
+        showToast('请先输入有效的 PAT Token', 'warning');
+        return;
+      }
       $('addMsg').className = 'msg';
       $('addMsg').textContent = '提交中...';
       try {
@@ -767,13 +1150,16 @@
         $('addMsg').className = 'msg ok';
         $('addMsg').textContent = 'PAT 添加成功';
         $('patInput').value = '';
+        showToast('账号已成功通过 PAT 添加！', 'success');
         await refresh();
       } catch (e) {
         $('addMsg').className = 'msg err';
         $('addMsg').textContent = e.message;
+        showToast(e.message, 'error');
       }
     };
 
+    // OAuth 登录
     $('oauthBtn').onclick = async () => {
       const region = $('regionInput').value;
       oauthAbort = false;
@@ -787,13 +1173,12 @@
         currentLoginID = session.login_id;
         $('oauthBox').style.display = 'block';
         $('oauthLink').href = session.login_url;
-        $('oauthLink').textContent = session.login_url;
         $('oauthMsg').className = 'msg';
         $('oauthMsg').textContent = '已打开登录页，等待授权...';
         $('cancelOauthBtn').disabled = false;
         window.open(session.login_url, '_blank', 'noopener');
+        showToast('授权页面已在新标签页打开，请完成授权', 'info');
 
-        // 后端同步等待；前端也阻塞在这个请求上
         const acct = await api('/api/oauth/wait', {
           method: 'POST',
           body: JSON.stringify({ login_id: currentLoginID, active: true }),
@@ -805,6 +1190,7 @@
         $('addMsg').textContent = 'OAuth 账号已保存';
         $('cancelOauthBtn').disabled = true;
         currentLoginID = '';
+        showToast('OAuth 账号授权成功并已激活！', 'success');
         await refresh();
       } catch (e) {
         if (oauthAbort) {
@@ -816,6 +1202,7 @@
           $('oauthMsg').textContent = e.message;
           $('addMsg').className = 'msg err';
           $('addMsg').textContent = e.message;
+          showToast(e.message, 'error');
         }
         $('cancelOauthBtn').disabled = true;
       }
@@ -836,19 +1223,23 @@
       currentLoginID = '';
     };
 
+    // 账号操作代理
     $('accountBody').onclick = async (ev) => {
       const btn = ev.target.closest('button[data-act]');
       if (!btn) return;
       const id = btn.dataset.id;
       const act = btn.dataset.act;
+
       try {
         if (act === 'activate') {
           await api('/api/active', { method: 'POST', body: JSON.stringify({ id }) });
+          showToast('已切换激活该账号', 'success');
           await refresh();
         } else if (act === 'quota') {
           const cell = document.querySelector(`[data-quota-id="${CSS.escape(id)}"]`);
           if (cell) cell.innerHTML = '<div class="quota muted">刷新中...</div>';
           await loadQuota(id);
+          showToast('配额刷新成功', 'success');
         } else if (act === 'checkin') {
           btn.disabled = true;
           const oldText = btn.textContent;
@@ -864,11 +1255,11 @@
               error: r.message || '失败',
             };
             let detail = msgs[r.status] || r.message || r.status;
-            if (r.streak_days) detail += `\n🔥 连续 ${r.streak_days} 天 · 累计 ${r.total_claim_days} 天 · 共 ${r.total_reward_credits} 积分`;
-            alert(`${r.account || ''}\n${detail}`);
+            if (r.streak_days) detail += ` (连续 ${r.streak_days} 天 / 累计 ${r.total_claim_days} 天)`;
+            showToast(`${r.account || ''}: ${detail}`, r.status === 'claimed' ? 'success' : 'info');
             if (r.status === 'claimed') await loadQuota(id);
           } catch (e) {
-            alert(e.message);
+            showToast(e.message, 'error');
           } finally {
             btn.disabled = false;
             btn.textContent = oldText;
@@ -877,22 +1268,21 @@
           const secs = parseInt(prompt('冷却该账号多少秒？（默认 300）', '300'), 10);
           if (!secs || secs <= 0) return;
           await api('/api/pool/cool', { method: 'POST', body: JSON.stringify({ id, seconds: secs, reason: 'manual' }) });
+          showToast(`该账号已进入冷却 (${secs}秒)`, 'warning');
           await refresh();
         } else if (act === 'delete') {
           if (!confirm('确认删除该账号？')) return;
           await api('/api/accounts/delete', { method: 'POST', body: JSON.stringify({ id }) });
           delete quotaCache[id];
+          showToast('账号已删除', 'info');
           await refresh();
         }
       } catch (e) {
-        alert(e.message);
+        showToast(e.message, 'error');
       }
     };
 
-    refresh();
-    setInterval(refresh, 20000);
-
-    // 显示/隐藏 API Key
+    // 显隐 API Key
     $('toggleBridgeToken').onclick = () => {
       const input = $('bridgeTokenInput');
       if (input.type === 'password') {
@@ -904,20 +1294,20 @@
       }
     };
 
-    // 显示/隐藏控制台密码
-    $('toggleConsolePassword').onclick = () => {
-      const input = document.getElementById('consolePasswordInput');
-      
+    // 显隐原密码
+    $('toggleOldPassword').onclick = () => {
+      const input = $('oldPasswordInput');
       if (input.type === 'password') {
         input.type = 'text';
-        input.style.color = '#000';
-        $('toggleConsolePassword').textContent = '隐藏';
+        $('toggleOldPassword').textContent = '隐藏';
       } else {
         input.type = 'password';
-        input.style.color = '';
-        $('toggleConsolePassword').textContent = '显示';
+        $('toggleOldPassword').textContent = '显示';
       }
     };
+
+    refresh();
+    setInterval(refresh, 20000);
   </script>
 </body>
 </html>

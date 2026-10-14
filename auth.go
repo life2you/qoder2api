@@ -19,6 +19,9 @@ import (
 const (
 	sessionCookieBase = "qoder2api_session"
 	sessionTTL        = 24 * time.Hour
+
+	DefaultConsoleUsername = "admin"
+	DefaultConsolePassword = "admin888"
 )
 
 // consoleWebPort 由 main 启动时写入，用于区分同 host 不同端口的 cookie
@@ -80,6 +83,20 @@ func (s *sessionStore) revoke(tok string) {
 	s.mu.Unlock()
 }
 
+func effectiveConsoleUsername() string {
+	if v := strings.TrimSpace(os.Getenv("QODER2API_CONSOLE_USERNAME")); v != "" {
+		return v
+	}
+	if svc != nil {
+		if st, err := svc.GetSettings(); err == nil && st != nil {
+			if u := strings.TrimSpace(st.ConsoleUsername); u != "" {
+				return u
+			}
+		}
+	}
+	return DefaultConsoleUsername
+}
+
 func effectiveConsolePassword() string {
 	if v := strings.TrimSpace(os.Getenv("QODER2API_CONSOLE_PASSWORD")); v != "" {
 		return v
@@ -91,43 +108,64 @@ func effectiveConsolePassword() string {
 			}
 		}
 	}
-	return ""
+	return DefaultConsolePassword
 }
 
-// ensureConsolePassword 若未配置密码则生成并写入 settings，启动时打印一次。
+// ensureConsolePassword 确保控制台账号与密码配置生效，启动时输出日志。
 func ensureConsolePassword() string {
-	if p := effectiveConsolePassword(); p != "" {
-		return p
-	}
-	b := make([]byte, 8)
-	_, _ = rand.Read(b)
-	p := hex.EncodeToString(b)
+	u := effectiveConsoleUsername()
+	p := effectiveConsolePassword()
 	cur, err := account.LoadSettings()
 	if err != nil || cur == nil {
 		cur = &account.Settings{Port: 8963, LogLevel: "info"}
 	}
-	cur.ConsolePassword = p
-	_ = account.SaveSettings(cur)
+	changed := false
+	if cur.ConsoleUsername == "" {
+		cur.ConsoleUsername = u
+		changed = true
+	}
+	if cur.ConsolePassword == "" {
+		cur.ConsolePassword = p
+		changed = true
+	}
+	if changed {
+		_ = account.SaveSettings(cur)
+	}
 	if svc != nil {
 		svc.bridgeToken = cur.BridgeToken
 		if cur.Port > 0 {
 			svc.bridgePort = cur.Port
 		}
 	}
-	logger.Info("console password auto-generated (saved to settings): %s", p)
-	logger.Info("override with env QODER2API_CONSOLE_PASSWORD or settings.console_password")
+	if p == DefaultConsolePassword {
+		logger.Info("console login credentials: username=%s (default password: %s)", u, DefaultConsolePassword)
+	} else {
+		logger.Info("console login credentials: username=%s (custom password configured)", u)
+	}
 	return p
 }
 
-func passwordOK(input string) bool {
-	want := effectiveConsolePassword()
-	if want == "" {
-		return false
+func credentialsOK(inputUser, inputPwd string) bool {
+	wantUser := effectiveConsoleUsername()
+	wantPwd := effectiveConsolePassword()
+
+	// 账号校验：客户端传入 username 时进行严格校验
+	if inputUser != "" {
+		aUser := sha256.Sum256([]byte(inputUser))
+		bUser := sha256.Sum256([]byte(wantUser))
+		if subtle.ConstantTimeCompare(aUser[:], bUser[:]) != 1 {
+			return false
+		}
 	}
-	// constant-time compare
-	a := sha256.Sum256([]byte(input))
-	b := sha256.Sum256([]byte(want))
-	return subtle.ConstantTimeCompare(a[:], b[:]) == 1
+
+	// 密码校验：必须与当前生效密码匹配
+	aPwd := sha256.Sum256([]byte(inputPwd))
+	bPwd := sha256.Sum256([]byte(wantPwd))
+	return subtle.ConstantTimeCompare(aPwd[:], bPwd[:]) == 1
+}
+
+func passwordOK(input string) bool {
+	return credentialsOK("", input)
 }
 
 func sessionTokenFromRequest(r *http.Request) string {
@@ -226,22 +264,24 @@ func handleAuthLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var req struct {
+		Username string `json:"username"`
 		Password string `json:"password"`
 	}
 	if err := readJSON(r, &req); err != nil {
 		writeError(w, http.StatusBadRequest, err)
 		return
 	}
-	if !passwordOK(strings.TrimSpace(req.Password)) {
+	if !credentialsOK(strings.TrimSpace(req.Username), strings.TrimSpace(req.Password)) {
 		// small delay against brute force
 		time.Sleep(300 * time.Millisecond)
-		writeError(w, http.StatusUnauthorized, fmt.Errorf("invalid password"))
+		writeError(w, http.StatusUnauthorized, fmt.Errorf("账号或密码错误"))
 		return
 	}
 	tok, exp := sessions.create()
 	setSessionCookie(w, tok, exp)
 	writeJSON(w, http.StatusOK, map[string]interface{}{
 		"ok":         true,
+		"username":   effectiveConsoleUsername(),
 		"expires_at": exp.Unix(),
 	})
 }
@@ -265,8 +305,9 @@ func handleAuthMe(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]interface{}{
-		"ok":      true,
-		"authed":  true,
-		"message": "console session active",
+		"ok":       true,
+		"authed":   true,
+		"username": effectiveConsoleUsername(),
+		"message":  "console session active",
 	})
 }

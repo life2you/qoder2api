@@ -1,8 +1,6 @@
 package main
 
 import (
-	"crypto/sha256"
-	"crypto/subtle"
 	"embed"
 	"encoding/json"
 	"flag"
@@ -440,13 +438,15 @@ func handleGetSettings(w http.ResponseWriter, r *http.Request) {
 	if out.Port == 0 {
 		out.Port = 8963
 	}
-	// 不回传明文控制台密码，只标记是否已设置
+	// 不回传明文控制台密码，只标记是否已设置，同时回传当前控制台用户名
 	hasConsolePwd := strings.TrimSpace(out.ConsolePassword) != "" || strings.TrimSpace(os.Getenv("QODER2API_CONSOLE_PASSWORD")) != ""
+	out.ConsoleUsername = effectiveConsoleUsername()
 	out.ConsolePassword = ""
 	writeJSON(w, http.StatusOK, map[string]interface{}{
 		"settings":             out,
 		"connection":           connectionInfo(),
 		"console_password_set": hasConsolePwd,
+		"console_username":     out.ConsoleUsername,
 	})
 }
 
@@ -462,11 +462,13 @@ func handleSaveSettings(w http.ResponseWriter, r *http.Request) {
 		AutoStart        *bool    `json:"auto_start"`
 		AutoCheckin      *bool    `json:"auto_checkin"`
 		AutoCheckinTimes []string `json:"auto_checkin_times"`
+		ConsoleUsername  *string  `json:"console_username"`
 		ConsolePassword  *string  `json:"console_password"`
-		// 新格式：包含旧密码和新密码
+		// 新格式：包含旧密码和新密码/新用户名
 		ConsolePasswordNew *struct {
 			OldPassword string  `json:"old_password"`
 			NewPassword *string `json:"new_password"`
+			NewUsername *string `json:"new_username"`
 		} `json:"console_password_new"`
 	}
 	if err := readJSON(r, &req); err != nil {
@@ -519,37 +521,38 @@ func handleSaveSettings(w http.ResponseWriter, r *http.Request) {
 		logger.Info("auto checkin times set to %v", times)
 	}
 
-	// 处理新格式的密码修改
+	// 处理新格式的账号/密码修改
 	if req.ConsolePasswordNew != nil {
 		oldPwd := strings.TrimSpace(req.ConsolePasswordNew.OldPassword)
 		newPwd := ""
 		if req.ConsolePasswordNew.NewPassword != nil {
 			newPwd = strings.TrimSpace(*req.ConsolePasswordNew.NewPassword)
 		}
+		newUsername := ""
+		if req.ConsolePasswordNew.NewUsername != nil {
+			newUsername = strings.TrimSpace(*req.ConsolePasswordNew.NewUsername)
+		}
 
 		// 验证旧密码
-		currentPassword := effectiveConsolePassword()
-		if currentPassword == "" {
-			writeError(w, http.StatusUnauthorized, fmt.Errorf("当前未设置控制台密码"))
+		if !credentialsOK("", oldPwd) {
+			writeError(w, http.StatusUnauthorized, fmt.Errorf("当前原密码错误，身份验证失败"))
 			return
 		}
 
-		a := sha256.Sum256([]byte(oldPwd))
-		b := sha256.Sum256([]byte(currentPassword))
-		if subtle.ConstantTimeCompare(a[:], b[:]) != 1 {
-			writeError(w, http.StatusUnauthorized, fmt.Errorf("旧密码错误"))
-			return
+		// 如果提供了新账号，则更新
+		if newUsername != "" {
+			cur.ConsoleUsername = newUsername
 		}
-
 		// 如果提供了新密码，则更新
 		if newPwd != "" {
 			cur.ConsolePassword = newPwd
 		}
-	} else if req.ConsolePassword != nil {
-		// 旧格式：直接设置密码
-		p := strings.TrimSpace(*req.ConsolePassword)
-		if p != "" {
-			cur.ConsolePassword = p
+	} else {
+		// 未提供 console_password_new 时，拒绝未经旧密码验证的直接账号密码篡改
+		if (req.ConsoleUsername != nil && strings.TrimSpace(*req.ConsoleUsername) != "") ||
+			(req.ConsolePassword != nil && strings.TrimSpace(*req.ConsolePassword) != "") {
+			writeError(w, http.StatusBadRequest, fmt.Errorf("修改控制台账号或密码需提供当前原密码验证身份"))
+			return
 		}
 	}
 
