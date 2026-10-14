@@ -183,4 +183,42 @@ func TestSanitizeToolCallsSequence(t *testing.T) {
 	if len(tcs) != 2 {
 		t.Errorf("expected 2 merged tool_calls, got %d", len(tcs))
 	}
+
+	// 测试场景 3：测试流式分片通过 MergeToolCallChunks 能够被正确聚合并提取出完整的 function_call
+	toolCallMerged := make(map[int]map[string]interface{})
+	chunks := []interface{}{
+		map[string]interface{}{
+			"index": float64(0),
+			"id":    "call_abc",
+			"type":  "function",
+			"function": map[string]interface{}{
+				"name":      "bash",
+				"arguments": "",
+			},
+		},
+		map[string]interface{}{
+			"index": float64(0),
+			"function": map[string]interface{}{
+				"arguments": "{\"command\":",
+			},
+		},
+		map[string]interface{}{
+			"index": float64(0),
+			"function": map[string]interface{}{
+				"arguments": "\"ls -la\"}",
+			},
+		},
+	}
+	MergeToolCallChunks(toolCallMerged, chunks)
+	mergedCalls := SortedToolCalls(toolCallMerged)
+	if len(mergedCalls) != 1 {
+		t.Fatalf("expected 1 merged tool call, got %d", len(mergedCalls))
+	}
+	fn, _ := mergedCalls[0]["function"].(map[string]interface{})
+	if fn["name"] != "bash" {
+		t.Errorf("expected function name 'bash', got %v", fn["name"])
+	}
+	if fn["arguments"] != "{\"command\":\"ls -la\"}" {
+		t.Errorf("expected merged arguments '{\"command\":\"ls -la\"}', got %v", fn["arguments"])
+	}
 }

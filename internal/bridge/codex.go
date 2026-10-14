@@ -98,7 +98,7 @@ func (b *Bridge) HandleCodexResponses(w http.ResponseWriter, r *http.Request) {
 		})
 		_ = contentPartId
 
-		var toolCallBuf []interface{}
+		toolCallMerged := make(map[int]map[string]interface{})
 
 		err = b.CallQoder(ctx, "codex", messages, model, tools, func(d Delta) {
 			if d.Content != "" {
@@ -111,7 +111,7 @@ func (b *Bridge) HandleCodexResponses(w http.ResponseWriter, r *http.Request) {
 				})
 			}
 			if d.ToolCalls != nil {
-				toolCallBuf = append(toolCallBuf, d.ToolCalls...)
+				MergeToolCallChunks(toolCallMerged, d.ToolCalls)
 			}
 		})
 		if err != nil {
@@ -131,12 +131,9 @@ func (b *Bridge) HandleCodexResponses(w http.ResponseWriter, r *http.Request) {
 			"content_index": 0,
 		})
 
+		mergedTools := SortedToolCalls(toolCallMerged)
 		// Emit tool calls as function_call items if any
-		for i, tc := range toolCallBuf {
-			tcMap, _ := tc.(map[string]interface{})
-			if tcMap == nil {
-				continue
-			}
+		for i, tcMap := range mergedTools {
 			fn, _ := tcMap["function"].(map[string]interface{})
 			callId, _ := tcMap["id"].(string)
 			if callId == "" {
@@ -179,16 +176,16 @@ func (b *Bridge) HandleCodexResponses(w http.ResponseWriter, r *http.Request) {
 				},
 			},
 		})
-		logger.Info("[Codex][%s] stream 完成 tool_calls=%d 耗时=%dms", reqID, len(toolCallBuf), time.Since(startTime).Milliseconds())
+		logger.Info("[Codex][%s] stream 完成 tool_calls=%d 耗时=%dms", reqID, len(mergedTools), time.Since(startTime).Milliseconds())
 	} else {
 		var full strings.Builder
-		var toolCallBuf []interface{}
+		toolCallMerged := make(map[int]map[string]interface{})
 		err = b.CallQoder(ctx, "codex", messages, model, tools, func(d Delta) {
 			if d.Content != "" {
 				full.WriteString(d.Content)
 			}
 			if d.ToolCalls != nil {
-				toolCallBuf = append(toolCallBuf, d.ToolCalls...)
+				MergeToolCallChunks(toolCallMerged, d.ToolCalls)
 			}
 		})
 		if err != nil {
@@ -206,11 +203,8 @@ func (b *Bridge) HandleCodexResponses(w http.ResponseWriter, r *http.Request) {
 				},
 			})
 		}
-		for _, tc := range toolCallBuf {
-			tcMap, _ := tc.(map[string]interface{})
-			if tcMap == nil {
-				continue
-			}
+		mergedTools := SortedToolCalls(toolCallMerged)
+		for _, tcMap := range mergedTools {
 			fn, _ := tcMap["function"].(map[string]interface{})
 			callId, _ := tcMap["id"].(string)
 			if callId == "" {
@@ -231,7 +225,7 @@ func (b *Bridge) HandleCodexResponses(w http.ResponseWriter, r *http.Request) {
 				"input_tokens": 0, "output_tokens": 0, "total_tokens": 0,
 			},
 		}
-		logger.Info("[Codex][%s] 完成 content_len=%d tool_calls=%d 耗时=%dms", reqID, full.Len(), len(toolCallBuf), time.Since(startTime).Milliseconds())
+		logger.Info("[Codex][%s] 完成 content_len=%d tool_calls=%d 耗时=%dms", reqID, full.Len(), len(mergedTools), time.Since(startTime).Milliseconds())
 		logger.Debug("[Codex][%s] 响应体: %s", reqID, func() string { d, _ := json.Marshal(resp); return string(d) }())
 		WriteJSON(w, resp)
 	}
