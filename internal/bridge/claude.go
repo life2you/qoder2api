@@ -25,7 +25,11 @@ func (b *Bridge) HandleClaudeMessages(w http.ResponseWriter, r *http.Request) {
 	}
 
 	reqID := cosy.NewUUID()[:8]
-	logger.Info("[Claude][%s] 收到请求 %s %s body_size=%d", reqID, r.Method, r.URL.Path, len(body))
+	user, _ := r.Context().Value("auth_user").(string)
+	if user == "" {
+		user = "default"
+	}
+	logger.Info("[Claude][%s][%s] 收到请求 %s %s body_size=%d", user, reqID, r.Method, r.URL.Path, len(body))
 	logger.Debug("[Claude][%s] 请求体（敏感字段已脱敏）: %s", reqID, RedactRequestBodyJSON(body))
 
 	var req map[string]interface{}

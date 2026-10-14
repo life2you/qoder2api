@@ -44,7 +44,11 @@ func (b *Bridge) HandleCodexResponses(w http.ResponseWriter, r *http.Request) {
 	prompt := ExtractLatestUserPrompt(incomingMsgs)
 	messages := BuildQoderMessages(b.templateMessages(), incomingMsgs, prompt, toolsEnabled)
 
-	logger.Info("[Codex][%s] model=%s stream=%v tools=%v msgs=%d", reqID, model, stream, toolsEnabled, len(incomingMsgs))
+	user, _ := r.Context().Value("auth_user").(string)
+	if user == "" {
+		user = "default"
+	}
+	logger.Info("[Codex][%s][%s] model=%s stream=%v tools=%v msgs=%d", user, reqID, model, stream, toolsEnabled, len(incomingMsgs))
 
 	respId := "resp_" + cosy.NewRequestID()
 	ctx := r.Context()

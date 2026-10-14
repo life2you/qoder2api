@@ -38,11 +38,22 @@ type Settings struct {
 	BridgeToken          string                       `json:"bridge_token,omitempty"`       // 自定义鉴权 token，空则使用默认值 "qccg"
 	ConsoleUsername      string                       `json:"console_username,omitempty"`   // Web 控制台登录账号（默认 admin）
 	ConsolePassword      string                       `json:"console_password,omitempty"`   // Web 控制台登录密码（默认 admin888）
+	APIKeys              []APIKey                     `json:"api_keys,omitempty"`           // 团队成员多 Key 列表
 	ModelMapping         map[string]string            `json:"model_mapping,omitempty"`      // [DEPRECATED] 旧扁平映射（向后兼容，MapModel 中作为兜底回退使用）
 	ModelMappings        map[string]map[string]string `json:"model_mappings,omitempty"`     // agent (claude/codex/gemini) → 客户端模型名 → Qoder model.key
 	AutoCheckin          bool                         `json:"auto_checkin"`                 // 自动签到开关（默认关闭）
 	AutoCheckinTimes     []string                     `json:"auto_checkin_times,omitempty"` // 自动签到时间点，HH:MM 列表，如 ["09:15","17:00"]；空=10:00
 	MachineSalt          string                       `json:"machine_salt,omitempty"`       // 本机设备指纹盐（首次启动自动生成；勿修改，变更即指纹漂移）
+}
+
+type APIKey struct {
+	ID           string     `json:"id"`                     // 唯一标识，如 "key-xxxx"
+	Key          string     `json:"key"`                    // 实际密钥，格式如 "sk-xxxx"
+	Name         string     `json:"name"`                   // 组员姓名或标识，如 "张三"
+	Enabled      bool       `json:"enabled"`                // 是否启用：true=启用，false=禁用
+	CreatedAt    time.Time  `json:"created_at"`             // 创建时间
+	RequestCount int64      `json:"request_count"`          // 累计调用次数
+	LastUsedAt   *time.Time `json:"last_used_at,omitempty"` // 最后一次调用时间
 }
 
 type QuotaInfo struct {

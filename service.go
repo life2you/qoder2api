@@ -1,7 +1,10 @@
 package main
 
 import (
+	"context"
+	"crypto/rand"
 	"crypto/subtle"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -38,10 +41,22 @@ type Service struct {
 	globalPort  int
 	bridgeToken string
 	basePrompt  []byte
+	keyMu       sync.RWMutex
+	keys        map[string]*account.APIKey // key string -> *APIKey
+}
+
+func generateRandomKey() string {
+	b := make([]byte, 24)
+	_, _ = rand.Read(b)
+	return "sk-" + hex.EncodeToString(b)
 }
 
 func NewService(basePrompt []byte) *Service {
-	return &Service{bridgePort: 8963, basePrompt: basePrompt}
+	return &Service{
+		bridgePort: 8963,
+		basePrompt: basePrompt,
+		keys:       make(map[string]*account.APIKey),
+	}
 }
 
 func (s *Service) LoadRuntimeSettings() {
@@ -55,6 +70,137 @@ func (s *Service) LoadRuntimeSettings() {
 		s.bridgePort = settings.Port
 	}
 	s.bridgeToken = settings.BridgeToken
+
+	s.keyMu.Lock()
+	s.keys = make(map[string]*account.APIKey)
+	for _, k := range settings.APIKeys {
+		copyKey := k
+		s.keys[k.Key] = &copyKey
+	}
+	s.keyMu.Unlock()
+}
+
+func (s *Service) ListAPIKeys() []account.APIKey {
+	s.keyMu.RLock()
+	defer s.keyMu.RUnlock()
+	res := make([]account.APIKey, 0, len(s.keys))
+	for _, v := range s.keys {
+		res = append(res, *v)
+	}
+	return res
+}
+
+func (s *Service) AddAPIKey(name, customKey string) (*account.APIKey, error) {
+	name = strings.TrimSpace(name)
+	if name == "" {
+		return nil, fmt.Errorf("成员姓名不能为空")
+	}
+	customKey = strings.TrimSpace(customKey)
+	if customKey == "" {
+		customKey = generateRandomKey()
+	}
+
+	s.keyMu.Lock()
+	defer s.keyMu.Unlock()
+
+	if _, exists := s.keys[customKey]; exists {
+		return nil, fmt.Errorf("该 API Key 已存在")
+	}
+	if customKey == s.EffectiveToken() {
+		return nil, fmt.Errorf("该 Key 与全局 Bridge Token 重复")
+	}
+
+	item := &account.APIKey{
+		ID:        fmt.Sprintf("key_%d", time.Now().UnixNano()),
+		Key:       customKey,
+		Name:      name,
+		Enabled:   true,
+		CreatedAt: time.Now(),
+	}
+	s.keys[customKey] = item
+
+	st, err := account.LoadSettings()
+	if err != nil || st == nil {
+		st = &account.Settings{}
+	}
+	st.APIKeys = append(st.APIKeys, *item)
+	_ = account.SaveSettings(st)
+
+	logger.Info("[APIKey] added key id=%s name=%s", item.ID, item.Name)
+	return item, nil
+}
+
+func (s *Service) ToggleAPIKey(id string, enabled bool) error {
+	s.keyMu.Lock()
+	defer s.keyMu.Unlock()
+
+	var target *account.APIKey
+	for _, v := range s.keys {
+		if v.ID == id {
+			v.Enabled = enabled
+			target = v
+			break
+		}
+	}
+	if target == nil {
+		return fmt.Errorf("未找到指定的 Key")
+	}
+
+	st, err := account.LoadSettings()
+	if err == nil && st != nil {
+		for i := range st.APIKeys {
+			if st.APIKeys[i].ID == id {
+				st.APIKeys[i].Enabled = enabled
+				break
+			}
+		}
+		_ = account.SaveSettings(st)
+	}
+	logger.Info("[APIKey] toggle key id=%s name=%s enabled=%v", target.ID, target.Name, enabled)
+	return nil
+}
+
+func (s *Service) DeleteAPIKey(id string) error {
+	s.keyMu.Lock()
+	defer s.keyMu.Unlock()
+
+	var foundKey string
+	var foundName string
+	for k, v := range s.keys {
+		if v.ID == id {
+			foundKey = k
+			foundName = v.Name
+			break
+		}
+	}
+	if foundKey == "" {
+		return fmt.Errorf("未找到指定的 Key")
+	}
+	delete(s.keys, foundKey)
+
+	st, err := account.LoadSettings()
+	if err == nil && st != nil {
+		var newKeys []account.APIKey
+		for _, k := range st.APIKeys {
+			if k.ID != id {
+				newKeys = append(newKeys, k)
+			}
+		}
+		st.APIKeys = newKeys
+		_ = account.SaveSettings(st)
+	}
+	logger.Info("[APIKey] deleted key id=%s name=%s", id, foundName)
+	return nil
+}
+
+func (s *Service) RecordKeyUsage(keyStr string) {
+	s.keyMu.Lock()
+	defer s.keyMu.Unlock()
+	if item, ok := s.keys[keyStr]; ok {
+		item.RequestCount++
+		now := time.Now()
+		item.LastUsedAt = &now
+	}
 }
 
 func (s *Service) EffectiveToken() string {
@@ -204,14 +350,10 @@ func (s *Service) restartBridge(acct *account.Account) error {
 }
 
 // authMiddleware Bridge 端点（/v1/*）鉴权中间件：
-// 接受 Authorization: Bearer <token> 或 x-api-key: <token>；
-// token 每次请求实时取 svc.EffectiveToken()，容忍运行中改配置；
-// 比较用 crypto/subtle.ConstantTimeCompare 防时序侧信道；
-// OPTIONS 预检直接放行（204），避免浏览器客户端 CORS 失败；
-// 校验失败返回 401 + OpenAI 风格错误体。
+// 优先在团队成员 Key 列表中查找匹配；若未匹配则回退兼容全局单 Key（BridgeToken / 默认 qccg）；
+// 验证通过后将成员姓名注入 context，实现日志链路调用者审计。
 func (s *Service) authMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		logger.Info("[HTTP] %s %s from %s", r.Method, r.URL.Path, r.RemoteAddr)
 		if r.Method == http.MethodOptions {
 			w.WriteHeader(http.StatusNoContent)
 			return
@@ -222,14 +364,53 @@ func (s *Service) authMiddleware(next http.Handler) http.Handler {
 		} else if k := r.Header.Get("x-api-key"); k != "" {
 			token = k
 		}
-		expect := s.EffectiveToken()
-		if token == "" || subtle.ConstantTimeCompare([]byte(token), []byte(expect)) != 1 {
+		if token == "" {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusUnauthorized)
+			fmt.Fprint(w, `{"error":{"message":"missing api key","type":"authentication_error"}}`)
+			return
+		}
+
+		callerName := ""
+		authed := false
+
+		// 1. 优先比对团队多 Key 列表
+		s.keyMu.RLock()
+		if keyItem, ok := s.keys[token]; ok {
+			if !keyItem.Enabled {
+				s.keyMu.RUnlock()
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusUnauthorized)
+				fmt.Fprint(w, `{"error":{"message":"api key is disabled by administrator","type":"authentication_error"}}`)
+				return
+			}
+			callerName = keyItem.Name
+			authed = true
+		}
+		s.keyMu.RUnlock()
+
+		// 2. 若未匹配成员 Key，回退兼容全局单 Key
+		if !authed {
+			expect := s.EffectiveToken()
+			if subtle.ConstantTimeCompare([]byte(token), []byte(expect)) == 1 {
+				callerName = "default"
+				authed = true
+			}
+		}
+
+		if !authed {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusUnauthorized)
 			fmt.Fprint(w, `{"error":{"message":"invalid api key","type":"authentication_error"}}`)
 			return
 		}
-		next.ServeHTTP(w, r)
+
+		// 异步更新成员 Key 请求计数与活跃时间
+		go s.RecordKeyUsage(token)
+
+		logger.Info("[HTTP][%s] %s %s from %s", callerName, r.Method, r.URL.Path, r.RemoteAddr)
+		ctx := context.WithValue(r.Context(), "auth_user", callerName)
+		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
 
@@ -401,6 +582,14 @@ func (s *Service) SaveSettings(st *account.Settings) error {
 	if st.QuotaRefreshInterval > 0 && st.QuotaRefreshInterval < 10 {
 		st.QuotaRefreshInterval = 10
 	}
+	// 保留当前内存中维护的 APIKeys，避免在保存其他设置时被空覆盖
+	s.keyMu.RLock()
+	if len(st.APIKeys) == 0 && len(s.keys) > 0 {
+		for _, v := range s.keys {
+			st.APIKeys = append(st.APIKeys, *v)
+		}
+	}
+	s.keyMu.RUnlock()
 	return account.SaveSettings(st)
 }
 

@@ -547,6 +547,37 @@
       </div>
     </section>
 
+    <!-- 团队成员多 Key 管理卡片 -->
+    <section class="card">
+      <div class="card-header">
+        <h3>🔑 团队成员 API Key 管理</h3>
+        <span class="muted">为每位组员分配独立的 API Key，调用日志精准审计到人，可随时单独禁用或撤销</span>
+      </div>
+
+      <div class="row" style="margin-bottom:16px;">
+        <input id="newKeyName" placeholder="组员姓名 / 标识（例如：张三、后端组-李四）" style="width:260px;" />
+        <input id="newKeyValue" placeholder="自定义 Key（选填，留空自动生成 sk-...）" style="width:260px;" />
+        <button id="addKeyBtn" class="success-action">➕ 生成/添加成员 Key</button>
+      </div>
+
+      <div style="overflow-x: auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>组员姓名 / 标识</th>
+              <th>专属 API Key</th>
+              <th>调用统计</th>
+              <th>状态开关</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="keysBody">
+            <tr><td colspan="5" class="muted">加载中...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
     <!-- 模型与日志 -->
     <section class="card grid-2">
       <div>
@@ -964,6 +995,8 @@
         $('accountBody').innerHTML = `<tr><td colspan="4" class="msg err">${escapeHtml(e.message)}</td></tr>`;
       }
 
+      await loadKeys();
+
       try {
         const res = await api('/api/models');
         const models = Array.isArray(res) ? res : (res && res.data) || [];
@@ -1310,6 +1343,151 @@
       } else {
         input.type = 'password';
         $('toggleOldPassword').textContent = '显示';
+      }
+    };
+
+    // 团队成员多 Key 管理
+    async function loadKeys() {
+      try {
+        const res = await api('/api/keys');
+        const keys = res.keys || [];
+        renderKeysTable(keys);
+      } catch (e) {
+        $('keysBody').innerHTML = `<tr><td colspan="5" class="msg err">${escapeHtml(e.message)}</td></tr>`;
+      }
+    }
+
+    function renderKeysTable(keys) {
+      if (!keys || !keys.length) {
+        $('keysBody').innerHTML = '<tr><td colspan="5" class="muted">暂未添加组员专属 Key（组员默认可使用下方统一的 Bridge API Key）</td></tr>';
+        return;
+      }
+      $('keysBody').innerHTML = keys.map(k => {
+        const masked = k.key.length > 12 ? k.key.slice(0, 6) + '...' + k.key.slice(-4) : k.key;
+        const lastUsed = k.last_used_at ? new Date(k.last_used_at).toLocaleString() : '从未使用';
+        const created = k.created_at ? new Date(k.created_at).toLocaleDateString() : '-';
+        return `
+          <tr data-key-id="${escapeHtml(k.id)}">
+            <td>
+              <strong>${escapeHtml(k.name)}</strong>
+              <div class="muted" style="font-size:11px;">创建于 ${created}</div>
+            </td>
+            <td>
+              <div class="row" style="gap:6px;">
+                <code class="key-display" data-full="${escapeHtml(k.key)}" data-masked="${escapeHtml(masked)}" style="background:#f1f5f9;padding:4px 8px;border-radius:6px;font-size:12px;">${escapeHtml(masked)}</code>
+                <button class="secondary copy-key-raw" data-text="${escapeHtml(k.key)}" style="padding:4px 8px;font-size:11.5px;">复制</button>
+                <button class="secondary toggle-key-raw" style="padding:4px 8px;font-size:11.5px;">显示</button>
+              </div>
+            </td>
+            <td>
+              <span class="pill" style="font-weight:600;">调用 ${k.request_count || 0} 次</span>
+              <div class="muted" style="font-size:11px;margin-top:2px;">最近: ${lastUsed}</div>
+            </td>
+            <td>
+              <button class="secondary toggle-key-status" data-id="${escapeHtml(k.id)}" data-enabled="${k.enabled}" style="padding:4px 10px;font-size:12px;color:${k.enabled ? '#166534' : '#dc2626'};background:${k.enabled ? '#dcfce7' : '#fee2e2'};border-color:${k.enabled ? '#bbf7d0' : '#fecaca'};">
+                ${k.enabled ? '● 已启用' : '○ 已禁用'}
+              </button>
+            </td>
+            <td>
+              <button class="danger delete-key-btn" data-id="${escapeHtml(k.id)}" data-name="${escapeHtml(k.name)}" style="padding:4px 10px;font-size:12px;">删除</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // 添加新 Key
+    $('addKeyBtn').onclick = async () => {
+      const name = ($('newKeyName').value || '').trim();
+      const customKey = ($('newKeyValue').value || '').trim();
+      if (!name) {
+        showToast('请输入组员姓名或标识', 'warning');
+        $('newKeyName').focus();
+        return;
+      }
+      try {
+        const res = await api('/api/keys/add', {
+          method: 'POST',
+          body: JSON.stringify({ name, key: customKey }),
+        });
+        $('newKeyName').value = '';
+        $('newKeyValue').value = '';
+        try {
+          await navigator.clipboard.writeText(res.key);
+          showToast(`已为「${name}」生成专属 Key 并自动复制到剪贴板！`, 'success', 4000);
+        } catch {
+          showToast(`已为「${name}」生成专属 Key！`, 'success');
+        }
+        await loadKeys();
+      } catch (e) {
+        showToast(e.message, 'error');
+      }
+    };
+
+    // 团队 Key 表格事件代理（复制、显隐、状态切换、删除）
+    $('keysBody').onclick = async (ev) => {
+      // 1. 复制
+      const copyBtn = ev.target.closest('.copy-key-raw');
+      if (copyBtn) {
+        const text = copyBtn.dataset.text;
+        try {
+          await navigator.clipboard.writeText(text);
+          showToast('已复制组员 Key 到剪贴板', 'success', 2000);
+        } catch {
+          prompt('请手动复制该 Key：', text);
+        }
+        return;
+      }
+
+      // 2. 显隐切换
+      const toggleRevealBtn = ev.target.closest('.toggle-key-raw');
+      if (toggleRevealBtn) {
+        const tr = toggleRevealBtn.closest('tr');
+        const codeEl = tr ? tr.querySelector('.key-display') : null;
+        if (codeEl) {
+          const isFull = codeEl.textContent === codeEl.dataset.full;
+          codeEl.textContent = isFull ? codeEl.dataset.masked : codeEl.dataset.full;
+          toggleRevealBtn.textContent = isFull ? '显示' : '隐藏';
+        }
+        return;
+      }
+
+      // 3. 启用/禁用切换
+      const toggleStatusBtn = ev.target.closest('.toggle-key-status');
+      if (toggleStatusBtn) {
+        const id = toggleStatusBtn.dataset.id;
+        const currentEnabled = toggleStatusBtn.dataset.enabled === 'true';
+        try {
+          await api('/api/keys/toggle', {
+            method: 'POST',
+            body: JSON.stringify({ id, enabled: !currentEnabled }),
+          });
+          showToast(!currentEnabled ? '已启用该 Key' : '已禁用该 Key', 'info');
+          await loadKeys();
+        } catch (e) {
+          showToast(e.message, 'error');
+        }
+        return;
+      }
+
+      // 4. 删除 Key
+      const deleteBtn = ev.target.closest('.delete-key-btn');
+      if (deleteBtn) {
+        const id = deleteBtn.dataset.id;
+        const name = deleteBtn.dataset.name;
+        if (!confirm(`确定要删除组员「${name}」的专属 Key 吗？删除后该 Key 将立即失效无法再发起请求。`)) {
+          return;
+        }
+        try {
+          await api('/api/keys/delete', {
+            method: 'POST',
+            body: JSON.stringify({ id }),
+          });
+          showToast(`已删除组员「${name}」的 Key`, 'info');
+          await loadKeys();
+        } catch (e) {
+          showToast(e.message, 'error');
+        }
       }
     };
 

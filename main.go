@@ -146,6 +146,13 @@ func main() {
 	mux.HandleFunc("/api/bridge/start", handleStartBridge)
 	mux.HandleFunc("/api/bridge/stop", handleStopBridge)
 	mux.HandleFunc("/api/checkin", handleCheckin)
+
+	// team api keys
+	mux.HandleFunc("/api/keys", handleListAPIKeys)
+	mux.HandleFunc("/api/keys/add", handleAddAPIKey)
+	mux.HandleFunc("/api/keys/toggle", handleToggleAPIKey)
+	mux.HandleFunc("/api/keys/delete", handleDeleteAPIKey)
+
 	mux.Handle("/", http.FileServer(http.FS(sub)))
 
 	addr := fmt.Sprintf("%s:%d", *bind, *webPort)
@@ -613,6 +620,82 @@ func handleStopBridge(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := svc.StopBridge(); err != nil {
+		writeError(w, http.StatusBadRequest, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
+}
+
+func handleListAPIKeys(w http.ResponseWriter, r *http.Request) {
+	keys := svc.ListAPIKeys()
+	writeJSON(w, http.StatusOK, map[string]interface{}{
+		"keys":                 keys,
+		"default_bridge_token": svc.EffectiveToken(),
+	})
+}
+
+func handleAddAPIKey(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeError(w, http.StatusMethodNotAllowed, fmt.Errorf("POST required"))
+		return
+	}
+	var req struct {
+		Name string `json:"name"`
+		Key  string `json:"key"`
+	}
+	if err := readJSON(r, &req); err != nil {
+		writeError(w, http.StatusBadRequest, err)
+		return
+	}
+	item, err := svc.AddAPIKey(req.Name, req.Key)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, item)
+}
+
+func handleToggleAPIKey(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeError(w, http.StatusMethodNotAllowed, fmt.Errorf("POST required"))
+		return
+	}
+	var req struct {
+		ID      string `json:"id"`
+		Enabled bool   `json:"enabled"`
+	}
+	if err := readJSON(r, &req); err != nil {
+		writeError(w, http.StatusBadRequest, err)
+		return
+	}
+	if req.ID == "" {
+		writeError(w, http.StatusBadRequest, fmt.Errorf("id is required"))
+		return
+	}
+	if err := svc.ToggleAPIKey(req.ID, req.Enabled); err != nil {
+		writeError(w, http.StatusBadRequest, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
+}
+
+func handleDeleteAPIKey(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeError(w, http.StatusMethodNotAllowed, fmt.Errorf("POST required"))
+		return
+	}
+	var req struct {
+		ID string `json:"id"`
+	}
+	if err := readJSON(r, &req); err != nil {
+		writeError(w, http.StatusBadRequest, err)
+		return
+	}
+	if req.ID == "" {
+		writeError(w, http.StatusBadRequest, fmt.Errorf("id is required"))
+		return
+	}
+	if err := svc.DeleteAPIKey(req.ID); err != nil {
 		writeError(w, http.StatusBadRequest, err)
 		return
 	}

@@ -39,7 +39,11 @@ func (b *Bridge) HandleChatCompletions(w http.ResponseWriter, r *http.Request) {
 	tools := NormalizeTools(req["tools"])
 	toolsEnabled := tools != nil
 
-	logger.Info("[Chat][%s] model=%s stream=%v tools=%v msgs=%d", reqID, model, stream, toolsEnabled, len(incomingMsgs))
+	user, _ := r.Context().Value("auth_user").(string)
+	if user == "" {
+		user = "default"
+	}
+	logger.Info("[Chat][%s][%s] model=%s stream=%v tools=%v msgs=%d", user, reqID, model, stream, toolsEnabled, len(incomingMsgs))
 
 	prompt := ExtractLatestUserPrompt(incomingMsgs)
 	messages := BuildQoderMessages(b.templateMessages(), incomingMsgs, prompt, toolsEnabled)
