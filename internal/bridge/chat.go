@@ -36,7 +36,7 @@ func (b *Bridge) HandleChatCompletions(w http.ResponseWriter, r *http.Request) {
 	stream, _ := req["stream"].(bool)
 	model := StrValDefault(req, "model", "auto")
 	incomingMsgs, _ := req["messages"].([]interface{})
-	tools := req["tools"]
+	tools := NormalizeTools(req["tools"])
 	toolsEnabled := tools != nil
 
 	logger.Info("[Chat][%s] model=%s stream=%v tools=%v msgs=%d", reqID, model, stream, toolsEnabled, len(incomingMsgs))

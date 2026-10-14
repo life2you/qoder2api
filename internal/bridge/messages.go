@@ -10,9 +10,12 @@ func BuildQoderMessages(templateMsgs []interface{}, incoming []interface{}, prom
 
 	hasIncomingSystem := false
 	for _, m := range incoming {
-		if mm, ok := m.(map[string]interface{}); ok && mm["role"] == "system" {
-			hasIncomingSystem = true
-			break
+		if mm, ok := m.(map[string]interface{}); ok {
+			role, _ := mm["role"].(string)
+			if role == "system" || role == "developer" {
+				hasIncomingSystem = true
+				break
+			}
 		}
 	}
 	if !hasIncomingSystem && templateMsgs != nil {
@@ -75,6 +78,9 @@ func BuildQoderMessages(templateMsgs []interface{}, incoming []interface{}, prom
 
 func ConvertIncomingMessage(msg map[string]interface{}, toolsEnabled bool) map[string]interface{} {
 	role, _ := msg["role"].(string)
+	if role == "developer" {
+		role = "system"
+	}
 	content := msg["content"]
 
 	// Handle Claude Messages API content blocks (array of typed blocks)
@@ -374,4 +380,71 @@ func NormalizeMessageContent(msg map[string]interface{}) string {
 		}
 	}
 	return sb
+}
+
+// NormalizeTools 将任何格式的 tools（OpenAI 标准嵌套格式、扁平 Codex 格式、Claude input_schema 等）
+// 统一转换为 Qoder 上游严格要求的 OpenAI 标准格式：
+// [ { "type": "function", "function": { "name": "...", "description": "...", "parameters": {...} } } ]
+func NormalizeTools(raw interface{}) interface{} {
+	if raw == nil {
+		return nil
+	}
+	tools, ok := raw.([]interface{})
+	if !ok || len(tools) == 0 {
+		return nil
+	}
+	var converted []interface{}
+	for _, t := range tools {
+		tm, ok := t.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		// 1. 如果已经包含合法的 function 对象字段（标准 OpenAI 格式）
+		if fnMap, ok := tm["function"].(map[string]interface{}); ok && len(fnMap) > 0 {
+			outFn := DeepCopyMap(fnMap)
+			if outFn["parameters"] == nil {
+				outFn["parameters"] = map[string]interface{}{
+					"type":       "object",
+					"properties": map[string]interface{}{},
+				}
+			}
+			converted = append(converted, map[string]interface{}{
+				"type":     "function",
+				"function": outFn,
+			})
+			continue
+		}
+
+		// 2. 扁平格式（Codex / Claude 等，name/parameters 在顶层）
+		name, _ := tm["name"].(string)
+		if name == "" {
+			continue
+		}
+		fn := map[string]interface{}{
+			"name": name,
+		}
+		if desc, ok := tm["description"]; ok && desc != nil {
+			fn["description"] = desc
+		}
+		// 获取 schema：优先 parameters，次选 input_schema (Claude)
+		if params, ok := tm["parameters"]; ok && params != nil {
+			fn["parameters"] = params
+		} else if schema, ok := tm["input_schema"]; ok && schema != nil {
+			fn["parameters"] = schema
+		} else {
+			fn["parameters"] = map[string]interface{}{
+				"type":       "object",
+				"properties": map[string]interface{}{},
+			}
+		}
+
+		converted = append(converted, map[string]interface{}{
+			"type":     "function",
+			"function": fn,
+		})
+	}
+	if len(converted) == 0 {
+		return nil
+	}
+	return converted
 }

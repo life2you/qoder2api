@@ -387,7 +387,9 @@ func (b *Bridge) CallQoderWithOpts(ctx context.Context, agent string, messages [
 
 	body["messages"] = messages
 	if tools != nil {
-		body["tools"] = tools
+		if normTools := NormalizeTools(tools); normTools != nil {
+			body["tools"] = normTools
+		}
 	}
 
 	mcSource := "system"

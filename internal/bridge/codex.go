@@ -36,7 +36,7 @@ func (b *Bridge) HandleCodexResponses(w http.ResponseWriter, r *http.Request) {
 	stream, _ := req["stream"].(bool)
 	model := StrValDefault(req, "model", "auto")
 	instructions, _ := req["instructions"].(string)
-	tools := req["tools"]
+	tools := NormalizeTools(req["tools"])
 	toolsEnabled := tools != nil
 
 	// Convert input to messages
@@ -253,6 +253,9 @@ func CodexInputToMessages(input interface{}, instructions string) []interface{} 
 			switch itemType {
 			case "message":
 				role, _ := itemMap["role"].(string)
+				if role == "developer" {
+					role = "system"
+				}
 				content := itemMap["content"]
 				if contentStr, ok := content.(string); ok {
 					msgs = append(msgs, map[string]interface{}{"role": role, "content": contentStr})

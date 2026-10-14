@@ -443,38 +443,5 @@ func SortedToolCalls(merged map[int]map[string]interface{}) []map[string]interfa
 }
 
 func ConvertClaudeToolsToOpenAI(raw interface{}) interface{} {
-	tools, ok := raw.([]interface{})
-	if !ok || len(tools) == 0 {
-		return nil
-	}
-	converted := make([]interface{}, 0, len(tools))
-	for _, t := range tools {
-		tm, ok := t.(map[string]interface{})
-		if !ok {
-			continue
-		}
-		// 如果已经是 OpenAI 格式（有 type 字段），直接保留
-		if _, hasType := tm["type"]; hasType {
-			converted = append(converted, tm)
-			continue
-		}
-		// Claude 格式转 OpenAI 格式
-		fn := map[string]interface{}{
-			"name": tm["name"],
-		}
-		if desc, ok := tm["description"]; ok {
-			fn["description"] = desc
-		}
-		if schema, ok := tm["input_schema"]; ok {
-			fn["parameters"] = schema
-		}
-		converted = append(converted, map[string]interface{}{
-			"type":     "function",
-			"function": fn,
-		})
-	}
-	if len(converted) == 0 {
-		return nil
-	}
-	return converted
+	return NormalizeTools(raw)
 }
