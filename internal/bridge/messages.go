@@ -73,7 +73,115 @@ func BuildQoderMessages(templateMsgs []interface{}, incoming []interface{}, prom
 	if len(rebuilt) == 0 && prompt != "" {
 		rebuilt = append(rebuilt, BuildUserMessage(prompt))
 	}
-	return rebuilt
+	return SanitizeToolCallsSequence(rebuilt)
+}
+
+// SanitizeToolCallsSequence 确保 OpenAI 格式上下文中的 tool_calls 完整性：
+// 1. 合并连续出现的 assistant 消息中的 tool_calls；
+// 2. 检查每个带有 tool_calls 的 assistant 消息，收集其所有的 tool_call_id；
+// 3. 统计紧随其后的 role == "tool" 消息中实际回复的 tool_call_id；
+// 4. 若有任何缺失的 tool_call_id（如客户端中断、取消、或遗漏），自动在后续补齐空响应，
+//    杜绝上游报 400: "An assistant message with 'tool_calls' must be followed by tool messages responding to each 'tool_call_id'"。
+func SanitizeToolCallsSequence(msgs []interface{}) []interface{} {
+	if len(msgs) == 0 {
+		return msgs
+	}
+
+	// 阶段一：合并连续的带有 tool_calls 的 assistant 消息
+	var merged []interface{}
+	for _, m := range msgs {
+		mm, ok := m.(map[string]interface{})
+		if !ok {
+			merged = append(merged, m)
+			continue
+		}
+		if mm["role"] == "assistant" && mm["tool_calls"] != nil {
+			if len(merged) > 0 {
+				if prev, ok := merged[len(merged)-1].(map[string]interface{}); ok && prev["role"] == "assistant" && prev["tool_calls"] != nil {
+					// 合并 tool_calls
+					prevCalls, _ := prev["tool_calls"].([]interface{})
+					curCalls, _ := mm["tool_calls"].([]interface{})
+					prev["tool_calls"] = append(prevCalls, curCalls...)
+					// 合并 content
+					prevText, _ := prev["content"].(string)
+					curText, _ := mm["content"].(string)
+					if curText != "" {
+						if prevText != "" {
+							prev["content"] = prevText + "\n" + curText
+						} else {
+							prev["content"] = curText
+						}
+					}
+					continue
+				}
+			}
+		}
+		merged = append(merged, m)
+	}
+
+	// 阶段二：检查并自愈每个 assistant 的 tool_calls 闭合性
+	var result []interface{}
+	n := len(merged)
+	for i := 0; i < n; i++ {
+		m := merged[i]
+		mm, ok := m.(map[string]interface{})
+		if !ok || mm["role"] != "assistant" || mm["tool_calls"] == nil {
+			result = append(result, m)
+			continue
+		}
+
+		rawCalls, ok := mm["tool_calls"].([]interface{})
+		if !ok || len(rawCalls) == 0 {
+			result = append(result, m)
+			continue
+		}
+
+		// 收集当前 assistant 声称的所有 call_id
+		expectedCallIDs := make(map[string]bool)
+		var callIDList []string
+		for _, rc := range rawCalls {
+			if cm, ok := rc.(map[string]interface{}); ok {
+				if id, ok := cm["id"].(string); ok && id != "" {
+					expectedCallIDs[id] = true
+					callIDList = append(callIDList, id)
+				}
+			}
+		}
+
+		// 加入当前的 assistant 消息
+		result = append(result, m)
+
+		// 向后查找紧跟的连续 role == "tool" 消息
+		respondedCallIDs := make(map[string]bool)
+		j := i + 1
+		for ; j < n; j++ {
+			nextM, ok := merged[j].(map[string]interface{})
+			if !ok || nextM["role"] != "tool" {
+				break
+			}
+			if tcid, ok := nextM["tool_call_id"].(string); ok && tcid != "" {
+				respondedCallIDs[tcid] = true
+			}
+			result = append(result, nextM)
+		}
+
+		// 检查是否有缺失的 tool_call_id
+		for _, cid := range callIDList {
+			if !respondedCallIDs[cid] {
+				// 自动补齐虚拟响应，满足上游严格校验
+				result = append(result, map[string]interface{}{
+					"role":         "tool",
+					"tool_call_id": cid,
+					"content":      "{\"status\":\"interrupted_or_completed\"}",
+				})
+			}
+		}
+
+		// 推进外层循环指针到扫描完毕的位置
+		i = j - 1
+	}
+
+	return result
 }
 
 func ConvertIncomingMessage(msg map[string]interface{}, toolsEnabled bool) map[string]interface{} {

@@ -120,3 +120,67 @@ func TestNormalizeTools(t *testing.T) {
 		t.Errorf("unexpected std tool: %+v", fn3)
 	}
 }
+
+func TestSanitizeToolCallsSequence(t *testing.T) {
+	// 测试场景 1：assistant 包含 call_1 和 call_2，但客户端只回复了 call_1
+	inputMsgs := []interface{}{
+		map[string]interface{}{
+			"role":    "assistant",
+			"content": "thinking",
+			"tool_calls": []interface{}{
+				map[string]interface{}{"id": "call_1", "type": "function"},
+				map[string]interface{}{"id": "call_2", "type": "function"},
+			},
+		},
+		map[string]interface{}{
+			"role":         "tool",
+			"tool_call_id": "call_1",
+			"content":      "result_1",
+		},
+	}
+
+	sanitized := SanitizeToolCallsSequence(inputMsgs)
+	// 应自动为 call_2 补齐 tool 响应
+	if len(sanitized) != 3 {
+		t.Fatalf("expected 3 messages after sanitize, got %d: %+v", len(sanitized), sanitized)
+	}
+	third, _ := sanitized[2].(map[string]interface{})
+	if third["role"] != "tool" || third["tool_call_id"] != "call_2" {
+		t.Errorf("expected synthesized tool response for call_2, got %+v", third)
+	}
+
+	// 测试场景 2：连续两个 assistant 消息包含 tool_calls，应被合并
+	consecutiveMsgs := []interface{}{
+		map[string]interface{}{
+			"role": "assistant",
+			"tool_calls": []interface{}{
+				map[string]interface{}{"id": "call_a", "type": "function"},
+			},
+		},
+		map[string]interface{}{
+			"role": "assistant",
+			"tool_calls": []interface{}{
+				map[string]interface{}{"id": "call_b", "type": "function"},
+			},
+		},
+		map[string]interface{}{
+			"role":         "tool",
+			"tool_call_id": "call_a",
+			"content":      "res_a",
+		},
+		map[string]interface{}{
+			"role":         "tool",
+			"tool_call_id": "call_b",
+			"content":      "res_b",
+		},
+	}
+	merged := SanitizeToolCallsSequence(consecutiveMsgs)
+	if len(merged) != 3 { // 1 个合并后的 assistant + 2 个 tool
+		t.Fatalf("expected 3 messages after merge consecutive assistants, got %d", len(merged))
+	}
+	asst, _ := merged[0].(map[string]interface{})
+	tcs, _ := asst["tool_calls"].([]interface{})
+	if len(tcs) != 2 {
+		t.Errorf("expected 2 merged tool_calls, got %d", len(tcs))
+	}
+}

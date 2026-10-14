@@ -48,6 +48,9 @@ var transientHTTPCodes = map[int]bool{418: true, 500: true, 502: true, 503: true
 var clientFaultMarkers = []string{
 	"invalid_parameter_error", // 如 Range of max_tokens 校验失败
 	"invalid_request_error",
+	"insufficient tool messages",
+	"must be followed by tool messages",
+	"tool_call_id",
 	"authentication_error",
 	"permission_error",
 	`"Range of `,

@@ -281,14 +281,27 @@ func CodexInputToMessages(input interface{}, instructions string) []interface{} 
 				name, _ := itemMap["name"].(string)
 				args, _ := itemMap["arguments"].(string)
 				callId, _ := itemMap["call_id"].(string)
-				msgs = append(msgs, map[string]interface{}{
-					"role": "assistant", "content": "",
-					"tool_calls": []interface{}{
-						map[string]interface{}{
-							"id": callId, "type": "function",
-							"function": map[string]interface{}{"name": name, "arguments": args},
-						},
+				newCall := map[string]interface{}{
+					"id":   callId,
+					"type": "function",
+					"function": map[string]interface{}{
+						"name":      name,
+						"arguments": args,
 					},
+				}
+				// 若上一条已经是 assistant 消息，合并到同一个 tool_calls 列表中，避免连续 assistant 导致上游 400
+				if len(msgs) > 0 {
+					if last, ok := msgs[len(msgs)-1].(map[string]interface{}); ok && last["role"] == "assistant" {
+						if tc, ok := last["tool_calls"].([]interface{}); ok {
+							last["tool_calls"] = append(tc, newCall)
+							continue
+						}
+					}
+				}
+				msgs = append(msgs, map[string]interface{}{
+					"role":        "assistant",
+					"content":     "",
+					"tool_calls": []interface{}{newCall},
 				})
 			case "function_call_output":
 				callId, _ := itemMap["call_id"].(string)
