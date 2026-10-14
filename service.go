@@ -96,6 +96,14 @@ func (s *Service) AddAPIKey(name, customKey string) (*account.APIKey, error) {
 		return nil, fmt.Errorf("成员姓名不能为空")
 	}
 	customKey = strings.TrimSpace(customKey)
+
+	// 防浏览器密码管理器误自动填充（如误将当前登录用户名 admin 填入）
+	if customKey != "" {
+		if customKey == effectiveConsoleUsername() || customKey == effectiveConsolePassword() {
+			customKey = "" // 自动转为高强度随机生成
+		}
+	}
+
 	if customKey == "" {
 		customKey = generateRandomKey()
 	}
