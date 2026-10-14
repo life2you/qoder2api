@@ -948,13 +948,20 @@
       await loadConnection();
 
       try {
-        const res = await api('/api/accounts');
-        renderAccounts(res.accounts || [], res.pool || {});
-        (res.accounts || []).forEach(a => {
+        let pool = {};
+        try {
+          const p = await api('/api/pool');
+          if (p) pool = p;
+        } catch (_) {}
+
+        const accRes = await api('/api/accounts');
+        const list = Array.isArray(accRes) ? accRes : ((accRes && accRes.accounts) || []);
+        renderAccounts(list, pool);
+        list.forEach(a => {
           if (!quotaCache[a.id]) loadQuota(a.id);
         });
       } catch (e) {
-        $('accountBody').innerHTML = `<tr><td colspan="4" class="msg err">${e.message}</td></tr>`;
+        $('accountBody').innerHTML = `<tr><td colspan="4" class="msg err">${escapeHtml(e.message)}</td></tr>`;
       }
 
       try {
