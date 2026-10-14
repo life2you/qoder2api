@@ -36,12 +36,12 @@
       -webkit-font-smoothing: antialiased;
     }
 
-    /* 顶部导航 Header */
+    /* 顶部常驻导航 Header */
     header {
       position: sticky;
       top: 0;
       z-index: 50;
-      padding: 14px 28px;
+      padding: 12px 28px;
       background: rgba(255, 255, 255, 0.88);
       backdrop-filter: blur(14px);
       -webkit-backdrop-filter: blur(14px);
@@ -50,7 +50,7 @@
       justify-content: space-between;
       align-items: center;
       gap: 16px;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.02);
     }
 
     .brand-area {
@@ -60,8 +60,8 @@
     }
 
     .brand-logo {
-      width: 34px;
-      height: 34px;
+      width: 36px;
+      height: 36px;
       border-radius: 10px;
       background: linear-gradient(135deg, #38bdf8 0%, #2563eb 100%);
       display: flex;
@@ -71,8 +71,8 @@
     }
 
     .brand-logo svg {
-      width: 18px;
-      height: 18px;
+      width: 20px;
+      height: 20px;
       fill: none;
       stroke: #fff;
       stroke-width: 2.2;
@@ -88,7 +88,7 @@
     }
 
     .brand-title .sub {
-      font-size: 12px;
+      font-size: 11.5px;
       color: var(--text-muted);
     }
 
@@ -131,26 +131,95 @@
       box-shadow: 0 0 10px rgba(16, 185, 129, 0.6);
     }
 
-    /* 主内容布局 */
+    /* 主内容布局容器 */
     main {
       max-width: 1160px;
       margin: 0 auto;
-      padding: 24px;
-      display: grid;
-      gap: 20px;
+      padding: 20px 24px 40px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
     }
 
+    /* 顶部仪表状态条 (常驻可见) */
+    .status-summary-bar {
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 10px 16px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* 现代化 Tab 切换条 */
+    .nav-tabs {
+      display: flex;
+      gap: 8px;
+      padding: 6px;
+      background: #e2e8f0;
+      border-radius: 14px;
+      overflow-x: auto;
+    }
+
+    .tab-btn {
+      flex: 1;
+      min-width: 130px;
+      padding: 10px 18px;
+      font-size: 13.5px;
+      font-weight: 600;
+      color: #64748b;
+      background: transparent;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.18s ease;
+      white-space: nowrap;
+    }
+
+    .tab-btn:hover {
+      color: #0f172a;
+      background: rgba(255, 255, 255, 0.55);
+      box-shadow: none;
+    }
+
+    .tab-btn.active {
+      color: #0f172a;
+      background: #ffffff;
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08), 0 1px 3px rgba(0, 0, 0, 0.04);
+    }
+
+    /* Tab 内容面板 */
+    .tab-pane {
+      display: none;
+      flex-direction: column;
+      gap: 18px;
+      animation: tabFadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .tab-pane.active {
+      display: flex;
+    }
+
+    @keyframes tabFadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* 通用卡片容器 */
     .card {
       background: var(--card);
       border: 1px solid var(--border);
       border-radius: var(--radius-lg);
-      padding: 20px 24px;
+      padding: 22px 24px;
       box-shadow: var(--shadow-md);
       transition: box-shadow 0.2s ease;
     }
 
     .card:hover {
-      box-shadow: 0 8px 26px -4px rgba(15, 23, 42, 0.08), 0 3px 8px -1px rgba(15, 23, 42, 0.04);
+      box-shadow: 0 8px 24px -4px rgba(15, 23, 42, 0.08), 0 2px 6px -1px rgba(15, 23, 42, 0.03);
     }
 
     .card-header {
@@ -160,6 +229,8 @@
       margin-bottom: 16px;
       padding-bottom: 12px;
       border-bottom: 1px solid #f1f5f9;
+      flex-wrap: wrap;
+      gap: 10px;
     }
 
     h3 {
@@ -193,7 +264,8 @@
     @media (max-width: 860px) {
       .grid-2 { grid-template-columns: 1fr; }
       header { flex-direction: column; align-items: flex-start; }
-      main { padding: 16px; }
+      main { padding: 14px; }
+      .tab-btn { min-width: 100px; padding: 8px 12px; font-size: 12.5px; }
     }
 
     label {
@@ -204,7 +276,7 @@
       margin-bottom: 6px;
     }
 
-    /* 表单与按钮 */
+    /* 表单控件与按钮 */
     input, select {
       width: 100%;
       font: inherit;
@@ -368,7 +440,7 @@
       word-break: break-word;
       font-size: 12px;
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-      max-height: 280px;
+      max-height: 380px;
       overflow: auto;
       background: #0f172a;
       color: #e2e8f0;
@@ -438,10 +510,10 @@
   </style>
 </head>
 <body>
-  <!-- 全局 Toast 容器 -->
+  <!-- 全局 Toast 浮窗 -->
   <div id="toastContainer"></div>
 
-  <!-- 顶部导航 -->
+  <!-- 顶部导航 Header -->
   <header>
     <div class="brand-area">
       <div class="brand-logo">
@@ -454,190 +526,204 @@
     </div>
     <div class="header-actions">
       <span class="pill user-pill">
-        👤 当前账号: <strong id="currentUsername">admin</strong>
+        👤 登录用户: <strong id="currentUsername">admin</strong>
       </span>
       <span class="pill">
         <span id="statusDot" class="dot"></span>
         <span id="statusText">检测中...</span>
       </span>
-      <button class="secondary" id="refreshBtn">🔄 刷新</button>
-      <button class="secondary" id="logoutBtn" style="color: #dc2626;">🚪 退出</button>
+      <button class="secondary" id="refreshBtn">🔄 刷新数据</button>
+      <button class="secondary" id="logoutBtn" style="color: #dc2626;">🚪 退出登录</button>
     </div>
   </header>
 
   <main>
-    <!-- 服务状态卡片 -->
-    <section class="card">
-      <div class="card-header">
-        <h3>⚡ 服务运行状态</h3>
-      </div>
+    <!-- 常驻状态仪表条 -->
+    <div class="status-summary-bar">
       <div class="row" id="statusMeta"></div>
-    </section>
+    </div>
 
-    <!-- 账号列表与签到卡片 -->
-    <section class="card">
-      <div class="card-header">
-        <h3>👥 账号管理与配额</h3>
-        <span class="muted">已接入的多账号池支持自动轮换与故障转移</span>
-      </div>
+    <!-- 顶部 Tab 标签切换导航 -->
+    <nav class="nav-tabs" id="navTabs">
+      <button class="tab-btn active" data-tab="tab-accounts">
+        <span>👥</span>
+        <span>账号池与额度</span>
+      </button>
+      <button class="tab-btn" data-tab="tab-keys">
+        <span>🔑</span>
+        <span>团队 API Key</span>
+      </button>
+      <button class="tab-btn" data-tab="tab-config">
+        <span>🔗</span>
+        <span>接入与配置</span>
+      </button>
+      <button class="tab-btn" data-tab="tab-models-logs">
+        <span>📜</span>
+        <span>模型与审计日志</span>
+      </button>
+    </nav>
 
-      <div class="row" style="margin-bottom:16px;">
-        <button id="checkinBtn" class="success-action">🎁 每日签到领 100 Credits</button>
-        <label class="pill" style="cursor:pointer; margin-bottom:0">
-          <input type="checkbox" id="autoCheckinToggle" style="width:auto; margin-right:6px">
-          每日定时自动签到
-        </label>
-        <input id="autoCheckinTimes" placeholder="09:15,17:00" style="width:170px" title="每天自动签到的时间，逗号分隔，HH:MM；留空=10:00">
-        <button class="secondary" id="autoCheckinTimesSave">保存签到时间</button>
-        <span class="msg" id="checkinMsg"></span>
-      </div>
-
-      <div id="checkinResult" style="margin-bottom:16px; display:none">
-        <pre id="checkinBox"></pre>
-      </div>
-
-      <div style="overflow-x: auto;">
-        <table>
-          <thead>
-            <tr>
-              <th>账号名称 / 邮箱</th>
-              <th>套餐 / 模式 / 区域</th>
-              <th>额度消耗与拓展包</th>
-              <th>操作</th>
-            </tr>
-          </thead>
-          <tbody id="accountBody">
-            <tr><td colspan="4" class="muted">加载中...</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
-
-    <!-- 添加账号卡片 -->
-    <section class="card">
-      <div class="card-header">
-        <h3>➕ 添加新账号</h3>
-        <span class="muted">支持 OAuth 网页授权登录或直接填入 PAT Token</span>
-      </div>
-      <div class="grid-2">
-        <div>
-          <label>账号所属 Region (国内 / 国际)</label>
-          <select id="regionInput">
-            <option value="global">global (国际版)</option>
-            <option value="cn">cn (国内版)</option>
-          </select>
-        </div>
-        <div>
-          <label>PAT Token（可选，与 OAuth 二选一）</label>
-          <input id="patInput" placeholder="粘贴 Qoder PAT Token" />
-        </div>
-      </div>
-      <div class="row" style="margin-top:14px">
-        <button id="oauthBtn">🌐 OAuth 浏览器授权</button>
-        <button class="secondary" id="addBtn">用 PAT 添加</button>
-        <button class="secondary" id="cancelOauthBtn" disabled>取消 OAuth</button>
-        <span class="msg" id="addMsg"></span>
-      </div>
-      <div class="oauth-box" id="oauthBox" style="display:none">
-        <div class="muted">请在弹出的浏览器页面中完成 Qoder 账号授权：</div>
-        <div style="margin-top:8px">
-          若未自动弹出，请手动点击：<a id="oauthLink" href="#" target="_blank" rel="noopener">打开授权页面</a>
-        </div>
-        <div class="msg" id="oauthMsg" style="margin-top:8px">等待授权中...</div>
-      </div>
-    </section>
-
-    <!-- 团队成员多 Key 管理卡片 -->
-    <section class="card">
-      <div class="card-header">
-        <h3>🔑 团队成员 API Key 管理</h3>
-        <span class="muted">为每位组员分配独立的 API Key，调用日志精准审计到人，可随时单独禁用或撤销</span>
-      </div>
-
-      <div class="row" style="margin-bottom:16px;">
-        <input id="newKeyName" placeholder="组员姓名 / 标识（例如：张三、后端组-李四）" style="width:260px;" />
-        <input id="newKeyValue" placeholder="自定义 Key（选填，留空自动生成 sk-...）" style="width:260px;" />
-        <button id="addKeyBtn" class="success-action">➕ 生成/添加成员 Key</button>
-      </div>
-
-      <div style="overflow-x: auto;">
-        <table>
-          <thead>
-            <tr>
-              <th>组员姓名 / 标识</th>
-              <th>专属 API Key</th>
-              <th>调用统计</th>
-              <th>状态开关</th>
-              <th>操作</th>
-            </tr>
-          </thead>
-          <tbody id="keysBody">
-            <tr><td colspan="5" class="muted">加载中...</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
-
-    <!-- 模型与日志 -->
-    <section class="card grid-2">
-      <div>
+    <!-- ==================== Tab 1: 账号池与额度 ==================== -->
+    <div class="tab-pane active" id="tab-accounts">
+      <!-- 账号列表与签到卡片 -->
+      <section class="card">
         <div class="card-header">
-          <h3>🤖 支持模型</h3>
+          <h3>👥 账号池管理与配额</h3>
+          <span class="muted">多账号池支持负载均衡、故障自动转移与冷却恢复</span>
         </div>
-        <div id="modelsBox" style="overflow-x: auto;">加载中...</div>
-      </div>
-      <div>
+
+        <div class="row" style="margin-bottom:16px;">
+          <button id="checkinBtn" class="success-action">🎁 每日签到领 100 Credits</button>
+          <label class="pill" style="cursor:pointer; margin-bottom:0">
+            <input type="checkbox" id="autoCheckinToggle" style="width:auto; margin-right:6px">
+            每日定时自动签到
+          </label>
+          <input id="autoCheckinTimes" placeholder="09:15,17:00" style="width:160px" title="每天自动签到的时间，逗号分隔，HH:MM；留空=10:00">
+          <button class="secondary" id="autoCheckinTimesSave">保存签到时间</button>
+          <span class="msg" id="checkinMsg"></span>
+        </div>
+
+        <div id="checkinResult" style="margin-bottom:16px; display:none">
+          <pre id="checkinBox"></pre>
+        </div>
+
+        <div style="overflow-x: auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>账号名称 / 邮箱</th>
+                <th>套餐 / 模式 / 区域</th>
+                <th>额度消耗与拓展包</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="accountBody">
+              <tr><td colspan="4" class="muted">加载中...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- 添加账号卡片 -->
+      <section class="card">
         <div class="card-header">
-          <h3>📜 运行日志 (最新)</h3>
+          <h3>➕ 接入新 Qoder 账号</h3>
+          <span class="muted">推荐通过浏览器 OAuth 授权登录（自动刷新保活）；服务器环境可使用 PAT 添加</span>
         </div>
-        <pre id="logsBox">加载中...</pre>
-      </div>
-    </section>
-
-    <!-- NewAPI 中转与连接配置 -->
-    <section class="card">
-      <div class="card-header">
-        <h3>🔗 API 接入与中转配置</h3>
-        <span class="muted">配置接入到 NewAPI、NextChat、Claude Code 等兼容客户端</span>
-      </div>
-
-      <div class="grid-2">
-        <div>
-          <label>OpenAI 兼容 Base URL（推荐）</label>
-          <div class="row">
-            <input id="openaiBaseUrl" readonly />
-            <button class="secondary copy-btn" type="button" data-copy="openaiBaseUrl">复制</button>
+        <div class="grid-2">
+          <div>
+            <label>账号所属 Region (国内 / 国际)</label>
+            <select id="regionInput">
+              <option value="global">global (国际版 qoder.ai)</option>
+              <option value="cn">cn (国内版 qoder.cn)</option>
+            </select>
+          </div>
+          <div>
+            <label>PAT Token（可选，与 OAuth 二选一）</label>
+            <input id="patInput" placeholder="粘贴 Qoder PAT Token" />
           </div>
         </div>
-        <div>
-          <label>Root Base URL（Claude 等原生端点）</label>
-          <div class="row">
-            <input id="rootBaseUrl" readonly />
-            <button class="secondary copy-btn" type="button" data-copy="rootBaseUrl">复制</button>
+        <div class="row" style="margin-top:14px">
+          <button id="oauthBtn">🌐 OAuth 浏览器授权</button>
+          <button class="secondary" id="addBtn">用 PAT 添加</button>
+          <button class="secondary" id="cancelOauthBtn" disabled>取消 OAuth</button>
+          <span class="msg" id="addMsg"></span>
+        </div>
+        <div class="oauth-box" id="oauthBox" style="display:none">
+          <div class="muted">请在弹出的浏览器页面中完成 Qoder 账号授权：</div>
+          <div style="margin-top:8px">
+            若未自动弹出，请手动点击：<a id="oauthLink" href="#" target="_blank" rel="noopener">打开授权页面</a>
+          </div>
+          <div class="msg" id="oauthMsg" style="margin-top:8px">等待授权中...</div>
+        </div>
+      </section>
+    </div>
+
+    <!-- ==================== Tab 2: 团队 API Key ==================== -->
+    <div class="tab-pane" id="tab-keys">
+      <section class="card">
+        <div class="card-header">
+          <h3>🔑 团队成员 API Key 管理</h3>
+          <span class="muted">为每位组员分配专属 Key，调用日志精准审计到人，可随时单独禁用或撤销</span>
+        </div>
+
+        <div class="row" style="margin-bottom:16px;">
+          <input id="newKeyName" placeholder="组员姓名 / 标识（例如：张三、后端组-李四）" style="width:260px;" />
+          <input id="newKeyValue" placeholder="自定义 Key（选填，留空自动生成 sk-...）" style="width:260px;" />
+          <button id="addKeyBtn" class="success-action">➕ 生成/添加成员 Key</button>
+        </div>
+
+        <div style="overflow-x: auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>组员姓名 / 标识</th>
+                <th>专属 API Key</th>
+                <th>调用统计</th>
+                <th>状态开关</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="keysBody">
+              <tr><td colspan="5" class="muted">加载中...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <!-- ==================== Tab 3: 接入与系统配置 ==================== -->
+    <div class="tab-pane" id="tab-config">
+      <!-- 客户端中转配置 -->
+      <section class="card">
+        <div class="card-header">
+          <h3>🔗 API 接入与中转配置</h3>
+          <span class="muted">供 NewAPI、NextChat、Claude Code、Cursor 等客户端对接使用</span>
+        </div>
+
+        <div class="grid-2">
+          <div>
+            <label>OpenAI 兼容 Base URL（推荐）</label>
+            <div class="row">
+              <input id="openaiBaseUrl" readonly />
+              <button class="secondary copy-btn" type="button" data-copy="openaiBaseUrl">复制</button>
+            </div>
+          </div>
+          <div>
+            <label>Root Base URL（Claude 等原生端点）</label>
+            <div class="row">
+              <input id="rootBaseUrl" readonly />
+              <button class="secondary copy-btn" type="button" data-copy="rootBaseUrl">复制</button>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div class="grid-2" style="margin-top:16px;">
-        <div>
-          <label>Bridge API Key / 密钥（访问 API 凭证）</label>
-          <div class="row">
-            <input id="bridgeTokenInput" type="password" placeholder="qccg" />
-            <button class="secondary copy-btn" type="button" data-copy="bridgeTokenInput">复制</button>
-            <button class="secondary" type="button" id="toggleBridgeToken">显示</button>
+        <div class="grid-2" style="margin-top:16px;">
+          <div>
+            <label>全局默认 Bridge API Key（默认通用 Key）</label>
+            <div class="row">
+              <input id="bridgeTokenInput" type="password" placeholder="qccg" />
+              <button class="secondary copy-btn" type="button" data-copy="bridgeTokenInput">复制</button>
+              <button class="secondary" type="button" id="toggleBridgeToken">显示</button>
+            </div>
+          </div>
+          <div>
+            <label>Bridge 端口（默认 8963）</label>
+            <input id="bridgePortInput" type="number" min="1" max="65535" placeholder="8963" />
           </div>
         </div>
-        <div>
-          <label>Bridge 端口（默认 8963）</label>
-          <input id="bridgePortInput" type="number" min="1" max="65535" placeholder="8963" />
-        </div>
-      </div>
 
-      <!-- 控制台安全设置 -->
-      <div style="margin-top:24px; padding-top:18px; border-top: 1px dashed var(--border);">
-        <div class="card-header" style="border-bottom:none; padding-bottom:0; margin-bottom:12px;">
-          <h3>🛡️ 控制台账号与密码管理</h3>
-          <span class="muted">修改当前 Web 管理页面的登录账号或密码（不修改请留空）</span>
+        <div class="row" style="margin-top:18px;">
+          <button class="secondary" id="copyNewapiBtn">📋 复制 NewAPI 渠道 JSON</button>
+        </div>
+        <pre id="newapiBox" style="margin-top:12px; display:none;"></pre>
+      </section>
+
+      <!-- 控制台安全管理 -->
+      <section class="card">
+        <div class="card-header">
+          <h3>🛡️ 控制台账号与密码安全管理</h3>
+          <span class="muted">修改当前 Web 管理页面的登录凭据（不修改请留空）</span>
         </div>
 
         <div class="grid-2">
@@ -646,34 +732,50 @@
             <input id="consoleUsernameInput" type="text" placeholder="例如 admin" />
           </div>
           <div>
-            <label>当前原密码 <span class="muted">（修改账号或密码时作为身份凭据）</span></label>
+            <label>当前原密码 <span class="muted">（修改账号或密码时作为身份核验）</span></label>
             <div class="row">
-              <input id="oldPasswordInput" type="password" placeholder="请输入当前密码（默认 admin888）" />
+              <input id="oldPasswordInput" type="password" placeholder="请输入当前原密码" />
               <button class="secondary" type="button" id="toggleOldPassword">显示</button>
             </div>
           </div>
         </div>
 
-        <div class="grid-2" style="margin-top:12px;">
+        <div class="grid-2" style="margin-top:14px;">
           <div>
-            <label>新密码（留空表示不改密码）</label>
-            <input id="newPasswordInput" type="password" placeholder="请输入新密码" />
+            <label>新密码（留空表示不修改密码）</label>
+            <input id="newPasswordInput" type="password" placeholder="输入新密码" />
           </div>
           <div>
             <label>确认新密码</label>
-            <input id="confirmPasswordInput" type="password" placeholder="请再次输入新密码" />
+            <input id="confirmPasswordInput" type="password" placeholder="再次输入新密码" />
           </div>
         </div>
-      </div>
 
-      <div class="row" style="margin-top:20px;">
-        <button id="saveConnBtn" style="padding: 10px 22px;">💾 保存配置与密码</button>
-        <button class="secondary" id="copyNewapiBtn">📋 复制 NewAPI 渠道 JSON</button>
-        <span class="msg" id="connMsg"></span>
-      </div>
+        <div class="row" style="margin-top:20px;">
+          <button id="saveConnBtn" style="padding: 10px 24px;">💾 保存配置与凭证</button>
+          <span class="msg" id="connMsg"></span>
+        </div>
+      </section>
+    </div>
 
-      <pre id="newapiBox" style="margin-top:14px; display:none;"></pre>
-    </section>
+    <!-- ==================== Tab 4: 模型与审计日志 ==================== -->
+    <div class="tab-pane" id="tab-models-logs">
+      <section class="card">
+        <div class="card-header">
+          <h3>🤖 支持模型列表</h3>
+          <span class="muted">展示 Qoder 上游支持的模型上下文、最大输出与推理支持</span>
+        </div>
+        <div id="modelsBox" style="overflow-x: auto;">加载中...</div>
+      </section>
+
+      <section class="card">
+        <div class="card-header">
+          <h3>📜 运行日志 (最新审计)</h3>
+          <span class="muted">实时审计谁在调用、请求时间及路由结果</span>
+        </div>
+        <pre id="logsBox">加载中...</pre>
+      </section>
+    </div>
   </main>
 
   <script>
@@ -692,7 +794,7 @@
         .replace(/'/g, '&#039;');
     }
 
-    // 全局优雅 Toast 提示
+    // 全局 Toast 提示组件
     function showToast(message, type = 'info', duration = 3000) {
       const container = $('toastContainer');
       const toast = document.createElement('div');
@@ -704,6 +806,31 @@
         toast.classList.add('hide');
         setTimeout(() => toast.remove(), 250);
       }, duration);
+    }
+
+    // Tab 切换逻辑
+    const tabBtns = document.querySelectorAll('.tab-btn');
+    const tabPanes = document.querySelectorAll('.tab-pane');
+
+    function switchTab(tabId) {
+      tabBtns.forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.tab === tabId);
+      });
+      tabPanes.forEach(pane => {
+        pane.classList.toggle('active', pane.id === tabId);
+      });
+      localStorage.setItem('activeConsoleTab', tabId);
+    }
+
+    tabBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        switchTab(btn.dataset.tab);
+      });
+    });
+
+    const savedTab = localStorage.getItem('activeConsoleTab');
+    if (savedTab && $(savedTab)) {
+      switchTab(savedTab);
     }
 
     async function api(path, options = {}) {
@@ -723,12 +850,12 @@
 
     function setStatus(running, extra = {}) {
       $('statusDot').classList.toggle('on', !!running);
-      $('statusText').textContent = running ? '运行中 (Running)' : '已停止 (Stopped)';
+      $('statusText').textContent = running ? '运行中' : '已停止';
       $('statusMeta').innerHTML = `
         <span class="pill">Bridge 状态: <strong>${running ? '正常运行' : '已停止'}</strong></span>
         <span class="pill">API 端口: <strong>${extra.port || 8963}</strong></span>
-        <span class="pill">当前活跃账号: <strong>${extra.active_account || '无'}</strong></span>
-        <span class="pill">模式: <strong>${extra.api_mode || 'OpenAI/Claude'}</strong></span>
+        <span class="pill">当前活跃账号: <strong>${escapeHtml(extra.active_account || '无')}</strong></span>
+        <span class="pill">兼容模式: <strong>${extra.api_mode || 'OpenAI/Claude'}</strong></span>
       `;
     }
 
@@ -853,7 +980,7 @@
             <th>标识 Key</th>
             <th>上下文窗口</th>
             <th>最大输出</th>
-            <th>推理</th>
+            <th>推理支持</th>
             <th>状态</th>
           </tr>
         </thead>
@@ -874,7 +1001,7 @@
 
     function renderQuota(q) {
       if (!q) return '<div class="quota muted">加载中...</div>';
-      if (q.error) return `<div class="quota msg err">${q.error}</div>`;
+      if (q.error) return `<div class="quota msg err">${escapeHtml(q.error)}</div>`;
 
       let html = '';
       const userBucket = q.user_quota;
@@ -886,10 +1013,10 @@
         const cls = pct >= 90 ? 'bad' : (pct >= 70 ? 'warn' : '');
         html += `
           <div class="quota-block">
-            <strong>${q.plan || '套餐配额'}</strong><br/>
+            <strong>${escapeHtml(q.plan || '套餐配额')}</strong><br/>
             已用 ${fmtNum(u)} / ${fmtNum(t)} · 剩余 <strong>${fmtNum(r)}</strong><br/>
             <div class="bar ${cls}"><i style="width:${pct}%"></i></div>
-            ${userBucket.reset_time ? `<div style="margin-top:3px;color:var(--text-muted)">重置时间: ${userBucket.reset_time}</div>` : ''}
+            ${userBucket.reset_time ? `<div style="margin-top:3px;color:var(--text-muted)">重置: ${escapeHtml(userBucket.reset_time)}</div>` : ''}
           </div>
         `;
       } else {
@@ -931,7 +1058,7 @@
             : `<span class="pill" style="border-color:#bbf7d0;background:#dcfce7;color:#166534">池可用</span>`)
           : '';
         const poolNote = (slot && coolMs > 0 && slot.last_error)
-          ? `<div class="muted" style="font-size:11px;color:#dc2626">${slot.last_error}</div>` : '';
+          ? `<div class="muted" style="font-size:11px;color:#dc2626">${escapeHtml(slot.last_error)}</div>` : '';
         return `
         <tr data-id="${escapeHtml(a.id)}">
           <td>
@@ -968,6 +1095,57 @@
       if (cell) cell.innerHTML = renderQuota(quotaCache[id]);
     }
 
+    // 团队成员多 Key 管理
+    async function loadKeys() {
+      try {
+        const res = await api('/api/keys');
+        const keys = res.keys || [];
+        renderKeysTable(keys);
+      } catch (e) {
+        $('keysBody').innerHTML = `<tr><td colspan="5" class="msg err">${escapeHtml(e.message)}</td></tr>`;
+      }
+    }
+
+    function renderKeysTable(keys) {
+      if (!keys || !keys.length) {
+        $('keysBody').innerHTML = '<tr><td colspan="5" class="muted">暂未添加组员专属 Key（组员默认可使用「接入与配置」中的全局 Bridge API Key）</td></tr>';
+        return;
+      }
+      $('keysBody').innerHTML = keys.map(k => {
+        const masked = k.key.length > 12 ? k.key.slice(0, 6) + '...' + k.key.slice(-4) : k.key;
+        const lastUsed = k.last_used_at ? new Date(k.last_used_at).toLocaleString() : '从未使用';
+        const created = k.created_at ? new Date(k.created_at).toLocaleDateString() : '-';
+        return `
+          <tr data-key-id="${escapeHtml(k.id)}">
+            <td>
+              <strong>${escapeHtml(k.name)}</strong>
+              <div class="muted" style="font-size:11px;">创建于 ${created}</div>
+            </td>
+            <td>
+              <div class="row" style="gap:6px;">
+                <code class="key-display" data-full="${escapeHtml(k.key)}" data-masked="${escapeHtml(masked)}" style="background:#f1f5f9;padding:4px 8px;border-radius:6px;font-size:12px;">${escapeHtml(masked)}</code>
+                <button class="secondary copy-key-raw" data-text="${escapeHtml(k.key)}" style="padding:4px 8px;font-size:11.5px;">复制</button>
+                <button class="secondary toggle-key-raw" style="padding:4px 8px;font-size:11.5px;">显示</button>
+              </div>
+            </td>
+            <td>
+              <span class="pill" style="font-weight:600;">调用 ${k.request_count || 0} 次</span>
+              <div class="muted" style="font-size:11px;margin-top:2px;">最近: ${lastUsed}</div>
+            </td>
+            <td>
+              <button class="secondary toggle-key-status" data-id="${escapeHtml(k.id)}" data-enabled="${k.enabled}" style="padding:4px 10px;font-size:12px;color:${k.enabled ? '#166534' : '#dc2626'};background:${k.enabled ? '#dcfce7' : '#fee2e2'};border-color:${k.enabled ? '#bbf7d0' : '#fecaca'};">
+                ${k.enabled ? '● 已启用' : '○ 已禁用'}
+              </button>
+            </td>
+            <td>
+              <button class="danger delete-key-btn" data-id="${escapeHtml(k.id)}" data-name="${escapeHtml(k.name)}" style="padding:4px 10px;font-size:12px;">删除</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // 全量刷新
     async function refresh() {
       try {
         const st = await api('/api/status');
@@ -1122,7 +1300,6 @@
 
       const body = { port, bridge_token };
 
-      // 如果用户尝试修改账号或修改密码
       const hasAccountChanges = newPassword || (newUsername && newUsername !== $('currentUsername').textContent);
 
       if (hasAccountChanges) {
@@ -1155,14 +1332,13 @@
 
         fillConnection(res.connection || {}, res.settings || {});
 
-        // 保存成功后清空安全输入框
         $('oldPasswordInput').value = '';
         $('newPasswordInput').value = '';
         $('confirmPasswordInput').value = '';
 
         $('connMsg').className = 'msg ok';
         $('connMsg').textContent = res.note || '已保存';
-        showToast('设置与凭据保存成功！', 'success');
+        showToast('设置与凭证保存成功！', 'success');
 
         await refresh();
       } catch (e) {
@@ -1322,81 +1498,7 @@
       }
     };
 
-    // 显隐 API Key
-    $('toggleBridgeToken').onclick = () => {
-      const input = $('bridgeTokenInput');
-      if (input.type === 'password') {
-        input.type = 'text';
-        $('toggleBridgeToken').textContent = '隐藏';
-      } else {
-        input.type = 'password';
-        $('toggleBridgeToken').textContent = '显示';
-      }
-    };
-
-    // 显隐原密码
-    $('toggleOldPassword').onclick = () => {
-      const input = $('oldPasswordInput');
-      if (input.type === 'password') {
-        input.type = 'text';
-        $('toggleOldPassword').textContent = '隐藏';
-      } else {
-        input.type = 'password';
-        $('toggleOldPassword').textContent = '显示';
-      }
-    };
-
-    // 团队成员多 Key 管理
-    async function loadKeys() {
-      try {
-        const res = await api('/api/keys');
-        const keys = res.keys || [];
-        renderKeysTable(keys);
-      } catch (e) {
-        $('keysBody').innerHTML = `<tr><td colspan="5" class="msg err">${escapeHtml(e.message)}</td></tr>`;
-      }
-    }
-
-    function renderKeysTable(keys) {
-      if (!keys || !keys.length) {
-        $('keysBody').innerHTML = '<tr><td colspan="5" class="muted">暂未添加组员专属 Key（组员默认可使用下方统一的 Bridge API Key）</td></tr>';
-        return;
-      }
-      $('keysBody').innerHTML = keys.map(k => {
-        const masked = k.key.length > 12 ? k.key.slice(0, 6) + '...' + k.key.slice(-4) : k.key;
-        const lastUsed = k.last_used_at ? new Date(k.last_used_at).toLocaleString() : '从未使用';
-        const created = k.created_at ? new Date(k.created_at).toLocaleDateString() : '-';
-        return `
-          <tr data-key-id="${escapeHtml(k.id)}">
-            <td>
-              <strong>${escapeHtml(k.name)}</strong>
-              <div class="muted" style="font-size:11px;">创建于 ${created}</div>
-            </td>
-            <td>
-              <div class="row" style="gap:6px;">
-                <code class="key-display" data-full="${escapeHtml(k.key)}" data-masked="${escapeHtml(masked)}" style="background:#f1f5f9;padding:4px 8px;border-radius:6px;font-size:12px;">${escapeHtml(masked)}</code>
-                <button class="secondary copy-key-raw" data-text="${escapeHtml(k.key)}" style="padding:4px 8px;font-size:11.5px;">复制</button>
-                <button class="secondary toggle-key-raw" style="padding:4px 8px;font-size:11.5px;">显示</button>
-              </div>
-            </td>
-            <td>
-              <span class="pill" style="font-weight:600;">调用 ${k.request_count || 0} 次</span>
-              <div class="muted" style="font-size:11px;margin-top:2px;">最近: ${lastUsed}</div>
-            </td>
-            <td>
-              <button class="secondary toggle-key-status" data-id="${escapeHtml(k.id)}" data-enabled="${k.enabled}" style="padding:4px 10px;font-size:12px;color:${k.enabled ? '#166534' : '#dc2626'};background:${k.enabled ? '#dcfce7' : '#fee2e2'};border-color:${k.enabled ? '#bbf7d0' : '#fecaca'};">
-                ${k.enabled ? '● 已启用' : '○ 已禁用'}
-              </button>
-            </td>
-            <td>
-              <button class="danger delete-key-btn" data-id="${escapeHtml(k.id)}" data-name="${escapeHtml(k.name)}" style="padding:4px 10px;font-size:12px;">删除</button>
-            </td>
-          </tr>
-        `;
-      }).join('');
-    }
-
-    // 添加新 Key
+    // 添加新成员 Key
     $('addKeyBtn').onclick = async () => {
       const name = ($('newKeyName').value || '').trim();
       const customKey = ($('newKeyValue').value || '').trim();
@@ -1426,7 +1528,6 @@
 
     // 团队 Key 表格事件代理（复制、显隐、状态切换、删除）
     $('keysBody').onclick = async (ev) => {
-      // 1. 复制
       const copyBtn = ev.target.closest('.copy-key-raw');
       if (copyBtn) {
         const text = copyBtn.dataset.text;
@@ -1439,7 +1540,6 @@
         return;
       }
 
-      // 2. 显隐切换
       const toggleRevealBtn = ev.target.closest('.toggle-key-raw');
       if (toggleRevealBtn) {
         const tr = toggleRevealBtn.closest('tr');
@@ -1452,7 +1552,6 @@
         return;
       }
 
-      // 3. 启用/禁用切换
       const toggleStatusBtn = ev.target.closest('.toggle-key-status');
       if (toggleStatusBtn) {
         const id = toggleStatusBtn.dataset.id;
@@ -1470,7 +1569,6 @@
         return;
       }
 
-      // 4. 删除 Key
       const deleteBtn = ev.target.closest('.delete-key-btn');
       if (deleteBtn) {
         const id = deleteBtn.dataset.id;
@@ -1488,6 +1586,30 @@
         } catch (e) {
           showToast(e.message, 'error');
         }
+      }
+    };
+
+    // 显隐 API Key
+    $('toggleBridgeToken').onclick = () => {
+      const input = $('bridgeTokenInput');
+      if (input.type === 'password') {
+        input.type = 'text';
+        $('toggleBridgeToken').textContent = '隐藏';
+      } else {
+        input.type = 'password';
+        $('toggleBridgeToken').textContent = '显示';
+      }
+    };
+
+    // 显隐原密码
+    $('toggleOldPassword').onclick = () => {
+      const input = $('oldPasswordInput');
+      if (input.type === 'password') {
+        input.type = 'text';
+        $('toggleOldPassword').textContent = '隐藏';
+      } else {
+        input.type = 'password';
+        $('toggleOldPassword').textContent = '显示';
       }
     };
 
