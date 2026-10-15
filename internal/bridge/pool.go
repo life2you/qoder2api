@@ -72,10 +72,16 @@ func (s *Slot) cool(d time.Duration, reason string) {
 	s.lastErr = reason
 }
 
-func (s *Slot) noteSuccess() {
+func (s *Slot) noteSuccess() bool {
 	s.mu.Lock()
+	defer s.mu.Unlock()
+	// 如果原本就没有失败记录且未处于冷却中，状态未变化，无需触发写盘
+	if s.lastErr == "" && s.cooldownUntil.IsZero() {
+		return false
+	}
 	s.lastErr = ""
-	s.mu.Unlock()
+	s.cooldownUntil = time.Time{}
+	return true
 }
 
 // Pool 是账号池：轮询选号，跳过冷却中与已试过的账号。
@@ -254,12 +260,13 @@ func (p *Pool) Cool(id string, d time.Duration, reason string) {
 	}
 }
 
-// NoteSuccess 清除账号的失败标记。
+// NoteSuccess 清除账号的失败标记。仅在账号状态发生真实变化时才触发磁盘持久化，消除正常请求的 I/O 放大。
 func (p *Pool) NoteSuccess(id string) {
 	for _, s := range p.snapshot() {
 		if s.ID == id {
-			s.noteSuccess()
-			p.save()
+			if s.noteSuccess() {
+				p.save()
+			}
 			return
 		}
 	}

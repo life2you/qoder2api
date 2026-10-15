@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/url"
 	"qoder2api/internal/cosy"
@@ -13,6 +14,27 @@ import (
 	"time"
 
 	"qoder2api/logger"
+)
+
+// sharedTransport 全局复用的 HTTP 连接池 Transport，保持持久长连接，杜绝端口耗尽与握手耗时
+var sharedTransport = &http.Transport{
+	Proxy: http.ProxyFromEnvironment,
+	DialContext: (&net.Dialer{
+		Timeout:   10 * time.Second,
+		KeepAlive: 30 * time.Second,
+	}).DialContext,
+	ForceAttemptHTTP2:     true,
+	MaxIdleConns:          100,
+	MaxIdleConnsPerHost:   20,
+	IdleConnTimeout:       90 * time.Second,
+	TLSHandshakeTimeout:   10 * time.Second,
+	ExpectContinueTimeout: 1 * time.Second,
+}
+
+var (
+	sharedShortClient  = &http.Client{Transport: sharedTransport, Timeout: 15 * time.Second}
+	sharedPostClient   = &http.Client{Transport: sharedTransport, Timeout: 30 * time.Second}
+	sharedStreamClient = &http.Client{Transport: sharedTransport}
 )
 
 type BearerClient struct {
@@ -93,8 +115,7 @@ func (c *BearerClient) callGet(fullURL string) (map[string]interface{}, error) {
 	for k, v := range headers {
 		req.Header.Set(k, v)
 	}
-	client := &http.Client{Timeout: 15 * time.Second}
-	resp, err := client.Do(req)
+	resp, err := sharedShortClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -129,7 +150,6 @@ func (c *BearerClient) callPost(fullURL string, jsonBody interface{}) (map[strin
 			return nil, err
 		}
 	}
-	client := &http.Client{Timeout: 30 * time.Second}
 	var lastErr error
 	// 瞬时故障同账号快速重试：RetryBackoff（1s/2s）退避，仅瞬时类（418/5xx/provider_error/传输抖动）
 	for attempt := 0; attempt <= TransientMaxRetries; attempt++ {
@@ -147,7 +167,7 @@ func (c *BearerClient) callPost(fullURL string, jsonBody interface{}) (map[strin
 		for k, v := range headers {
 			req.Header.Set(k, v)
 		}
-		resp, err := client.Do(req)
+		resp, err := sharedPostClient.Do(req)
 		if err != nil {
 			lastErr = err
 			if IsTransientTransport(err) && attempt < TransientMaxRetries {
@@ -195,9 +215,7 @@ func (c *BearerClient) openStreamLines(ctx context.Context, fullURL string, json
 	if err != nil {
 		return err
 	}
-	// 不设整体 Timeout，改由 context 控制生命周期，避免长流式响应被截断
-	client := &http.Client{}
-
+	// 不设整体 Timeout，改由 context 控制生命周期，避免长流式响应被截断，复用全局连接池
 	var lastErr error
 	for attempt := 0; attempt <= TransientMaxRetries; attempt++ {
 		if attempt > 0 {
@@ -214,7 +232,7 @@ func (c *BearerClient) openStreamLines(ctx context.Context, fullURL string, json
 		for k, v := range headers {
 			req.Header.Set(k, v)
 		}
-		resp, err := client.Do(req)
+		resp, err := sharedStreamClient.Do(req)
 		if err != nil {
 			lastErr = err
 			if ctx.Err() != nil {

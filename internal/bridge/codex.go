@@ -1,6 +1,7 @@
 package bridge
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -51,7 +52,8 @@ func (b *Bridge) HandleCodexResponses(w http.ResponseWriter, r *http.Request) {
 	logger.Info("[Codex][%s][%s] model=%s stream=%v tools=%v msgs=%d", user, reqID, model, stream, toolsEnabled, len(incomingMsgs))
 
 	respId := "resp_" + cosy.NewRequestID()
-	ctx := r.Context()
+	ctx, cancel := context.WithCancel(r.Context())
+	defer cancel()
 
 	if stream {
 		w.Header().Set("Content-Type", "text/event-stream")
@@ -60,12 +62,16 @@ func (b *Bridge) HandleCodexResponses(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(200)
 		flusher, _ := w.(http.Flusher)
 
-		writeEvent := func(eventType string, data interface{}) {
+		writeEvent := func(eventType string, data interface{}) bool {
 			d, _ := json.Marshal(data)
-			fmt.Fprintf(w, "event: %s\ndata: %s\n\n", eventType, string(d))
+			if _, err := fmt.Fprintf(w, "event: %s\ndata: %s\n\n", eventType, string(d)); err != nil {
+				cancel() // 客户端断开连接，立即取消上游请求，止损配额消耗
+				return false
+			}
 			if flusher != nil {
 				flusher.Flush()
 			}
+			return true
 		}
 
 		writeEvent("response.created", map[string]interface{}{

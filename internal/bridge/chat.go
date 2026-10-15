@@ -1,6 +1,7 @@
 package bridge
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -50,7 +51,8 @@ func (b *Bridge) HandleChatCompletions(w http.ResponseWriter, r *http.Request) {
 
 	reqId := "chatcmpl-" + cosy.NewRequestID()
 	created := cosy.UnixSec()
-	ctx := r.Context()
+	ctx, cancel := context.WithCancel(r.Context())
+	defer cancel()
 
 	if stream {
 		w.Header().Set("Content-Type", "text/event-stream")
@@ -87,7 +89,10 @@ func (b *Bridge) HandleChatCompletions(w http.ResponseWriter, r *http.Request) {
 				logger.Error("[Chat][%s] marshal chunk failed: %v", reqID, err)
 				return
 			}
-			fmt.Fprintf(w, "data: %s\n\n", string(data))
+			if _, err := fmt.Fprintf(w, "data: %s\n\n", string(data)); err != nil {
+				cancel() // 客户端连接已断开，立即中止上游读取，防止白耗积分
+				return
+			}
 			if flusher != nil {
 				flusher.Flush()
 			}

@@ -1,6 +1,7 @@
 package bridge
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -87,7 +88,8 @@ func (b *Bridge) HandleClaudeMessages(w http.ResponseWriter, r *http.Request) {
 	logger.Info("[Claude][%s] model=%s stream=%v tools=%v thinking=%v max_tokens=%d msgs=%d", reqID, model, stream, toolsEnabled, opts.IsReasoning, opts.MaxTokens, len(incomingMsgs))
 
 	msgId := "msg_" + cosy.NewRequestID()
-	ctx := r.Context()
+	ctx, cancel := context.WithCancel(r.Context())
+	defer cancel()
 
 	if stream {
 		w.Header().Set("Content-Type", "text/event-stream")
@@ -96,12 +98,16 @@ func (b *Bridge) HandleClaudeMessages(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(200)
 		flusher, _ := w.(http.Flusher)
 
-		writeSse := func(eventType string, data interface{}) {
+		writeSse := func(eventType string, data interface{}) bool {
 			d, _ := json.Marshal(data)
-			fmt.Fprintf(w, "event: %s\ndata: %s\n\n", eventType, string(d))
+			if _, err := fmt.Fprintf(w, "event: %s\ndata: %s\n\n", eventType, string(d)); err != nil {
+				cancel() // 客户端断开连接，立即取消上游请求，止损配额消耗
+				return false
+			}
 			if flusher != nil {
 				flusher.Flush()
 			}
+			return true
 		}
 
 		writeSse("message_start", map[string]interface{}{
