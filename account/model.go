@@ -39,6 +39,7 @@ type Settings struct {
 	ConsoleUsername      string                       `json:"console_username,omitempty"`   // Web 控制台登录账号（默认 admin）
 	ConsolePassword      string                       `json:"console_password,omitempty"`   // Web 控制台登录密码（默认 admin888）
 	APIKeys              []APIKey                     `json:"api_keys,omitempty"`           // 团队成员多 Key 列表
+	EnabledModels        []string                     `json:"enabled_models,omitempty"`     // 公开/允许使用的模型 key 列表（nil 表示全部公开）
 	ModelMapping         map[string]string            `json:"model_mapping,omitempty"`      // [DEPRECATED] 旧扁平映射（向后兼容，MapModel 中作为兜底回退使用）
 	ModelMappings        map[string]map[string]string `json:"model_mappings,omitempty"`     // agent (claude/codex/gemini) → 客户端模型名 → Qoder model.key
 	AutoCheckin          bool                         `json:"auto_checkin"`                 // 自动签到开关（默认关闭）

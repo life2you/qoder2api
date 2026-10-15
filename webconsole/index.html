@@ -773,8 +773,13 @@
     <div class="tab-pane" id="tab-models-logs">
       <section class="card">
         <div class="card-header">
-          <h3>🤖 支持模型列表</h3>
-          <span class="muted">展示 Qoder 上游支持的模型上下文、最大输出与推理支持</span>
+          <div>
+            <h3>🤖 支持模型与公开控制</h3>
+            <span class="muted">可自由勾选开启/关闭哪些模型对客户端公开展示与调用（未勾选模型客户端不可见且强行调用会被拦截）</span>
+          </div>
+          <div class="row">
+            <button class="secondary" id="enableAllModelsBtn" style="font-size:12px;padding:6px 12px;">🌐 一键全部公开</button>
+          </div>
         </div>
         <div id="modelsBox" style="overflow-x: auto;">加载中...</div>
       </section>
@@ -975,13 +980,18 @@
         const maxOut = m.max_output_tokens != null ? Number(m.max_output_tokens).toLocaleString() : '-';
         const name = escapeHtml(m.display_name || m.id || m.key || '-');
         const key = escapeHtml(m.id || m.key || '-');
+        const isPub = m.is_public !== false;
         return `<tr>
           <td><strong>${name}</strong></td>
           <td><code>${key}</code></td>
           <td>${ctx}</td>
           <td>${maxOut}</td>
-          <td>${m.is_reasoning ? '✅' : '-'}</td>
-          <td>${m.enable === false ? '❌' : '✅'}</td>
+          <td>${m.is_reasoning ? '✅ 支持' : '-'}</td>
+          <td>
+            <button class="secondary model-toggle-btn" data-key="${key}" data-public="${isPub}" style="padding:4px 10px;font-size:12px;color:${isPub ? '#166534' : '#64748b'};background:${isPub ? '#dcfce7' : '#f1f5f9'};border-color:${isPub ? '#bbf7d0' : '#cbd5e1'};">
+              ${isPub ? '● 已公开' : '○ 已隐藏'}
+            </button>
+          </td>
         </tr>`;
       }).join('');
       return `<table>
@@ -991,8 +1001,8 @@
             <th>标识 Key</th>
             <th>上下文窗口</th>
             <th>最大输出</th>
-            <th>推理支持</th>
-            <th>状态</th>
+            <th>推理</th>
+            <th>公开控制 (客户端可见)</th>
           </tr>
         </thead>
         <tbody>${rows}</tbody>
@@ -1642,6 +1652,41 @@
       } else {
         input.type = 'password';
         $('toggleOldPassword').textContent = '显示';
+      }
+    };
+
+    // 模型公开开关切换事件代理
+    $('modelsBox').onclick = async (ev) => {
+      const btn = ev.target.closest('.model-toggle-btn');
+      if (!btn) return;
+      const key = btn.dataset.key;
+      const isPub = btn.dataset.public === 'true';
+      btn.disabled = true;
+      try {
+        await api('/api/models/toggle', {
+          method: 'POST',
+          body: JSON.stringify({ model: key, enabled: !isPub }),
+        });
+        showToast(!isPub ? `已公开模型「${key}」` : `已隐藏模型「${key}」（客户端将不可见且无法调用）`, 'info');
+        const res = await api('/api/models');
+        $('modelsBox').innerHTML = renderModelsTable(Array.isArray(res) ? res : (res && res.data) || []);
+      } catch (e) {
+        showToast(e.message, 'error');
+      } finally {
+        btn.disabled = false;
+      }
+    };
+
+    // 一键全部公开按钮
+    $('enableAllModelsBtn').onclick = async () => {
+      if (!confirm('确定要恢复所有模型对外部客户端公开吗？')) return;
+      try {
+        await api('/api/models/enable_all', { method: 'POST', body: '{}' });
+        showToast('已恢复全部模型公开展示', 'success');
+        const res = await api('/api/models');
+        $('modelsBox').innerHTML = renderModelsTable(Array.isArray(res) ? res : (res && res.data) || []);
+      } catch (e) {
+        showToast(e.message, 'error');
       }
     };
 

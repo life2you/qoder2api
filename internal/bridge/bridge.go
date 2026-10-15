@@ -318,6 +318,21 @@ func deltaDispatcher(onDelta func(Delta), upstreamErr *error) func(string) bool 
 	}
 }
 
+// IsModelAllowed 校验某模型当前是否对客户端公开发行
+func IsModelAllowed(modelKey string) bool {
+	st, err := account.LoadSettings()
+	if err != nil || st == nil || st.EnabledModels == nil {
+		return true // 未配置公开白名单，默认全部公开
+	}
+	k := strings.ToLower(strings.TrimSpace(modelKey))
+	for _, m := range st.EnabledModels {
+		if strings.ToLower(strings.TrimSpace(m)) == k {
+			return true
+		}
+	}
+	return false
+}
+
 func (b *Bridge) CallQoderWithOpts(ctx context.Context, agent string, messages []interface{}, model string, tools interface{}, opts CallOpts, onDelta func(Delta)) error {
 	// 将客户端模型名（claude-sonnet-4-6 等）映射成 Qoder 上游内部 model.key（auto/qmodel_38max/gmodel/dmodel 等）。
 	// 上游对未知 key 会走兜底返回内容，但不会把这次调用计入 quota，这是「请求成功但 dashboard 无用量」的根因。
@@ -325,6 +340,11 @@ func (b *Bridge) CallQoderWithOpts(ctx context.Context, agent string, messages [
 	model = MapModel(agent, model)
 	if model != originalModel {
 		logger.Debug("mapModel %s/%s -> %s", agent, originalModel, model)
+	}
+
+	// 模型公开与权限拦截：未公开或被管理员禁用的模型直接拒绝，不消耗配额
+	if !IsModelAllowed(model) && !IsModelAllowed(originalModel) {
+		return NewClientError(fmt.Sprintf("模型 '%s' 未公开或已被管理员禁用，请在控制台设置公开模型", originalModel))
 	}
 	body := DeepCopyMap(b.templateBase)
 

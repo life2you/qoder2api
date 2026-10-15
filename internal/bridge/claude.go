@@ -372,6 +372,19 @@ func (b *Bridge) HandleListModels(w http.ResponseWriter, r *http.Request) {
 			})
 		}
 	}
+
+	// 如果设置了公开模型白名单，仅向客户端返回允许公开的模型
+	var filtered []interface{}
+	for _, item := range data {
+		if m, ok := item.(map[string]interface{}); ok {
+			id, _ := m["id"].(string)
+			if IsModelAllowed(id) {
+				filtered = append(filtered, item)
+			}
+		}
+	}
+	data = filtered
+
 	WriteJSON(w, map[string]interface{}{"object": "list", "data": data})
 }
 

@@ -140,7 +140,10 @@ func main() {
 	mux.HandleFunc("/api/pool/cool", handlePoolCool)
 	mux.HandleFunc("/api/settings", handleGetSettings)
 	mux.HandleFunc("/api/settings/save", handleSaveSettings)
+	// models public management
 	mux.HandleFunc("/api/models", handleListModels)
+	mux.HandleFunc("/api/models/toggle", handleToggleModel)
+	mux.HandleFunc("/api/models/enable_all", handleEnableAllModels)
 	mux.HandleFunc("/api/logs", handleLogs)
 	mux.HandleFunc("/api/cleanup", handleCleanup)
 	mux.HandleFunc("/api/bridge/start", handleStartBridge)
@@ -584,6 +587,42 @@ func handleListModels(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, models)
+}
+
+func handleToggleModel(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeError(w, http.StatusMethodNotAllowed, fmt.Errorf("POST required"))
+		return
+	}
+	var req struct {
+		Model   string `json:"model"`
+		Enabled bool   `json:"enabled"`
+	}
+	if err := readJSON(r, &req); err != nil {
+		writeError(w, http.StatusBadRequest, err)
+		return
+	}
+	if req.Model == "" {
+		writeError(w, http.StatusBadRequest, fmt.Errorf("model is required"))
+		return
+	}
+	if err := svc.ToggleModelPublic(req.Model, req.Enabled); err != nil {
+		writeError(w, http.StatusBadRequest, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
+}
+
+func handleEnableAllModels(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeError(w, http.StatusMethodNotAllowed, fmt.Errorf("POST required"))
+		return
+	}
+	if err := svc.EnableAllModels(); err != nil {
+		writeError(w, http.StatusBadRequest, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
 }
 
 func handleLogs(w http.ResponseWriter, r *http.Request) {

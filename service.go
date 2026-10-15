@@ -29,6 +29,7 @@ type QoderModel struct {
 	MaxOutputTokens int     `json:"max_output_tokens,omitempty"`
 	MaxInputTokens  int     `json:"max_input_tokens,omitempty"`
 	PriceFactor     float64 `json:"price_factor,omitempty"`
+	IsPublic        bool    `json:"is_public"` // 对外部客户端是否公开发行
 }
 
 type Service struct {
@@ -649,8 +650,22 @@ func (s *Service) ListQoderModels() ([]QoderModel, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	st, _ := account.LoadSettings()
+	var enabledMap map[string]bool
+	if st != nil && st.EnabledModels != nil {
+		enabledMap = make(map[string]bool)
+		for _, k := range st.EnabledModels {
+			enabledMap[strings.ToLower(strings.TrimSpace(k))] = true
+		}
+	}
+
 	out := make([]QoderModel, len(models))
 	for i, m := range models {
+		isPub := true
+		if enabledMap != nil {
+			isPub = enabledMap[strings.ToLower(strings.TrimSpace(m.Key))]
+		}
 		out[i] = QoderModel{
 			Key:             m.Key,
 			DisplayName:     m.DisplayName,
@@ -661,9 +676,72 @@ func (s *Service) ListQoderModels() ([]QoderModel, error) {
 			PriceFactor:     m.PriceFactor,
 			ContextWindow:   m.ContextWindow,
 			MaxOutputTokens: m.MaxOutputTokens,
+			IsPublic:        isPub,
 		}
 	}
 	return out, nil
+}
+
+func (s *Service) ToggleModelPublic(modelKey string, enabled bool) error {
+	modelKey = strings.TrimSpace(modelKey)
+	if modelKey == "" {
+		return fmt.Errorf("model key is required")
+	}
+
+	st, err := account.LoadSettings()
+	if err != nil || st == nil {
+		st = &account.Settings{}
+	}
+
+	// 如果原本是全开状态（nil），先提取当前所有可用模型的 key 列表
+	if st.EnabledModels == nil {
+		models, err := s.ListQoderModels()
+		if err == nil && len(models) > 0 {
+			st.EnabledModels = make([]string, 0, len(models))
+			for _, m := range models {
+				if !strings.EqualFold(m.Key, modelKey) {
+					st.EnabledModels = append(st.EnabledModels, m.Key)
+				}
+			}
+			if enabled {
+				st.EnabledModels = append(st.EnabledModels, modelKey)
+			}
+		} else {
+			if enabled {
+				st.EnabledModels = []string{modelKey}
+			} else {
+				st.EnabledModels = []string{}
+			}
+		}
+	} else {
+		newModels := make([]string, 0, len(st.EnabledModels))
+		found := false
+		for _, m := range st.EnabledModels {
+			if strings.EqualFold(m, modelKey) {
+				found = true
+				if enabled {
+					newModels = append(newModels, m)
+				}
+			} else {
+				newModels = append(newModels, m)
+			}
+		}
+		if enabled && !found {
+			newModels = append(newModels, modelKey)
+		}
+		st.EnabledModels = newModels
+	}
+
+	return s.SaveSettings(st)
+}
+
+func (s *Service) EnableAllModels() error {
+	st, err := account.LoadSettings()
+	if err != nil || st == nil {
+		st = &account.Settings{}
+	}
+	st.EnabledModels = nil // 置为空表示默认全开
+	return s.SaveSettings(st)
 }
 
 func (s *Service) StartOAuthLogin(region string) (*account.OAuthSession, error) {

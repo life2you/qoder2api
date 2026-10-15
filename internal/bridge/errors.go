@@ -255,3 +255,13 @@ func ErrorStatus(err error) int {
 	}
 	return 500
 }
+
+// NewClientError 构造客户端参数/权限错误（400，快速失败，不触发账号池换号）
+func NewClientError(message string) *UpstreamError {
+	return &UpstreamError{
+		Status:  400,
+		Detail:  message,
+		ErrType: "invalid_request_error",
+		Message: message,
+	}
+}
